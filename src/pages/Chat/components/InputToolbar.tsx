@@ -1,10 +1,10 @@
 import * as React from 'react'
 import { AudioLines, Plus } from 'lucide-react'
 import { IconButton } from '@/components/IconButton'
-import { SendButton } from '@/components/SendButton'
-import { VoiceButton } from '@/components/VoiceButton'
-import { AttachButton } from '@/components/AttachButton'
-import { ModelSelector } from '@/components/ModelSelector'
+import { SendButton } from './SendButton'
+import { VoiceButton } from './VoiceButton'
+import { AttachButton } from './AttachButton'
+import { ModelSelector } from './ModelSelector'
 
 /**
  * InputToolbar — 底部工具栏。

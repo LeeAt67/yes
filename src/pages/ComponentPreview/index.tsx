@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { cn } from '@/lib/utils'
-import { ChatInput } from '@/components/ChatInput'
+import { ChatInput } from '@/pages/Chat/components/ChatInput'
 import { Button } from '@/components/Button'
 import { IconButton } from '@/components/IconButton'
 import { ArrowUp, Paperclip, Mic, Settings, ChevronDown } from 'lucide-react'

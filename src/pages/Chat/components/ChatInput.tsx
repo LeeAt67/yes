@@ -1,7 +1,7 @@
 import * as React from 'react'
 import { cn } from '@/lib/utils'
-import { PromptTextarea } from '@/components/PromptTextarea'
-import { InputToolbar } from '@/components/InputToolbar'
+import { PromptTextarea } from './PromptTextarea'
+import { InputToolbar } from './InputToolbar'
 
 /**
  * ChatInput — Claude 风格输入框。
