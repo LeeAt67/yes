@@ -1,6 +1,6 @@
 ---
 name: branch-workflow
-description: "Use when user asks to develop a new feature, build a new component, fix a bug, or start any code change. ENFORCES: always create a new branch from main before writing code; merge back to main only after the feature is complete. NEVER push directly to main."
+description: "Use when user asks to develop a new feature, build a new component, fix a bug, or start any code change. ENFORCES: always create a new branch from main before writing code; merge back to main ONLY with explicit user permission. NEVER merge or push to main without asking first."
 ---
 
 # Branch Workflow
@@ -53,23 +53,32 @@ git add -A
 git commit -m "feat: xxx"
 ```
 
-### Step 4: 开发完成后合并回 main
+### Step 4: 开发完成，请求合并许可
+
+**⚠️ 关键规则：AI 不得自行合并。必须先向用户请求许可。**
+
+当功能开发完成并通过验证后：
+
+1. 向用户汇报分支上的所有更改摘要
+2. **明确询问**："功能已开发完成，是否合并到 main 并推送？"
+3. 仅在用户明确回复"合并"/"推送"/"可以"/"好"等肯定答复后，才执行合并
 
 ```bash
-# 1. 先拉取最新 main
+# 用户许可后执行：
 git checkout main
 git pull origin main
-
-# 2. 合并功能分支
 git merge feat/my-feature
-
-# 3. 推送
 git push origin main
 
-# 4. 清理（可选）
+# 清理
 git branch -d feat/my-feature
 git push origin --delete feat/my-feature
 ```
+
+**禁止行为：**
+- ❌ 在用户未明确许可的情况下执行 `git merge`
+- ❌ 在用户未明确许可的情况下执行 `git push origin main`
+- ❌ 假设用户"之前说过可以"而跳过询问
 
 ### Step 5: 确认
 
@@ -82,10 +91,13 @@ git push origin --delete feat/my-feature
 - ❌ 在 `main` 分支上直接 `git push`
 - ❌ 用 `git push --force` 推 main
 - ❌ 跳过分支直接在 main 上 commit
+- ❌ **未获得用户明确许可就合并到 main**
+- ❌ 用"之前你说过可以"作为跳过询问的理由
 
 ## 检查清单
 
 在每次代码更改前，AI 必须确认：
 - [ ] 是否在非 main 分支上？
 - [ ] 分支名是否符合规范？
-- [ ] 开发完成后是否已合并回 main？
+- [ ] 开发完成后是否已向用户请求合并许可？
+- [ ] 仅在用户明确许可后才执行 merge + push
