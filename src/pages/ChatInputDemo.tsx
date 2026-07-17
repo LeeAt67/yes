@@ -364,7 +364,7 @@ export default function ChatInputDemoPage() {
   }
 
   return (
-    <div className="flex h-[calc(100vh-3.5rem)] overflow-hidden">
+    <div className="flex h-full overflow-hidden">
       {/* ===== 左侧导航 (Ant Design 风格) ===== */}
       <aside className="w-56 shrink-0 border-r bg-background overflow-y-auto">
         {/* 顶部标题 */}

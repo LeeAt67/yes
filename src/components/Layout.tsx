@@ -1,7 +1,5 @@
 import { Link, Outlet, useLocation } from 'react-router-dom'
-import { Home, Info, Sun, Moon, Puzzle } from 'lucide-react'
-import { Button } from '@/components/ui/button'
-import { Badge } from '@/components/ui/badge'
+import { Home, Info, Puzzle, Sun, Moon, ChevronLeft, ChevronRight } from 'lucide-react'
 import { useState, useEffect } from 'react'
 
 const navLinks = [
@@ -12,71 +10,92 @@ const navLinks = [
 
 export default function Layout() {
   const location = useLocation()
-  const [dark, setDark] = useState(() => {
-    return document.documentElement.classList.contains('dark')
-  })
+  const [dark, setDark] = useState(() =>
+    document.documentElement.classList.contains('dark'),
+  )
+  const [collapsed, setCollapsed] = useState(false)
 
   useEffect(() => {
     document.documentElement.classList.toggle('dark', dark)
   }, [dark])
 
   return (
-    <div className="min-h-screen flex flex-col">
-      {/* 导航栏 */}
-      <header className="sticky top-0 z-50 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-        <div className="mx-auto flex h-14 max-w-4xl items-center justify-between px-4">
-          {/* Logo */}
-          <Link to="/" className="flex items-center gap-2 font-semibold text-lg">
-            <Badge className="text-xs">R19</Badge>
-            <span className="bg-gradient-to-r from-primary to-purple-600 bg-clip-text text-transparent">
-              React Scaffold
-            </span>
+    <div className="flex h-screen overflow-hidden bg-background">
+      {/* ===== Claude 风格左侧边栏 ===== */}
+      <aside
+        className={`flex shrink-0 flex-col border-r bg-muted/30 transition-all duration-200 ${
+          collapsed ? 'w-14' : 'w-56'
+        }`}
+      >
+        {/* Logo */}
+        <div className="flex h-14 items-center gap-3 border-b px-3">
+          <Link
+            to="/"
+            className="flex shrink-0 items-center justify-center rounded-lg bg-primary text-primary-foreground h-7 w-7 text-xs font-bold"
+          >
+            R
           </Link>
-
-          {/* 导航链接 */}
-          <nav className="flex items-center gap-1">
-            {navLinks.map(({ to, label, icon: Icon }) => {
-              const isActive = location.pathname === to
-              return (
-                <Button
-                  key={to}
-                  variant={isActive ? 'secondary' : 'ghost'}
-                  size="sm"
-                  asChild
-                >
-                  <Link to={to}>
-                    <Icon className="mr-1 h-4 w-4" />
-                    {label}
-                  </Link>
-                </Button>
-              )
-            })}
-
-            {/* 主题切换 */}
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => setDark(!dark)}
-              className="ml-2"
-              title={dark ? '切换亮色模式' : '切换暗色模式'}
-            >
-              {dark ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
-            </Button>
-          </nav>
+          {!collapsed && (
+            <Link to="/" className="font-semibold text-sm">
+              React Scaffold
+            </Link>
+          )}
+          <button
+            onClick={() => setCollapsed(!collapsed)}
+            className={`ml-auto shrink-0 rounded-md p-1 text-muted-foreground hover:bg-accent hover:text-foreground transition-colors ${
+              collapsed ? 'ml-0' : ''
+            }`}
+            title={collapsed ? '展开侧栏' : '收起侧栏'}
+          >
+            {collapsed ? (
+              <ChevronRight className="h-4 w-4" />
+            ) : (
+              <ChevronLeft className="h-4 w-4" />
+            )}
+          </button>
         </div>
-      </header>
 
-      {/* 页面内容 */}
-      <main className="flex-1">
+        {/* 导航菜单 */}
+        <nav className="flex-1 overflow-y-auto p-2 space-y-0.5">
+          {navLinks.map(({ to, label, icon: Icon }) => {
+            const isActive = location.pathname === to
+            return (
+              <Link
+                key={to}
+                to={to}
+                title={collapsed ? label : undefined}
+                className={`flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition-colors ${
+                  isActive
+                    ? 'bg-accent text-foreground font-medium'
+                    : 'text-muted-foreground hover:text-foreground hover:bg-accent/50'
+                } ${collapsed ? 'justify-center px-0' : ''}`}
+              >
+                <Icon className="h-4 w-4 shrink-0" />
+                {!collapsed && <span>{label}</span>}
+              </Link>
+            )
+          })}
+        </nav>
+
+        {/* 底部：主题切换 */}
+        <div className="border-t p-2">
+          <button
+            onClick={() => setDark(!dark)}
+            className={`flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm text-muted-foreground hover:text-foreground hover:bg-accent/50 transition-colors ${
+              collapsed ? 'justify-center px-0' : ''
+            }`}
+            title={dark ? '切换亮色' : '切换暗色'}
+          >
+            {dark ? <Sun className="h-4 w-4 shrink-0" /> : <Moon className="h-4 w-4 shrink-0" />}
+            {!collapsed && <span>{dark ? '亮色模式' : '暗色模式'}</span>}
+          </button>
+        </div>
+      </aside>
+
+      {/* ===== 右侧内容区 ===== */}
+      <main className="flex-1 overflow-y-auto">
         <Outlet />
       </main>
-
-      {/* 页脚 */}
-      <footer className="border-t py-6 text-center text-xs text-muted-foreground">
-        <p>
-          React 19 · MobX 6 · shadcn/ui · Tailwind CSS · Rspack 2 · React Router
-        </p>
-      </footer>
     </div>
   )
 }
