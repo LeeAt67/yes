@@ -38,16 +38,18 @@ Demo 是 React + TypeScript + MobX + Tailwind CSS 的通用应用，拥有多项
 | 副作用 | `src/controller/effects/` |
 | 服务层 | `src/service/`（用 Zod 做运行时类型校验） |
 | 组件 | `src/components/` |
-| 页面 | `src/pages/`（`/` → Claw，`/c` → Home） |
+| 页面 | `src/pages/`（`/` → Home，`/claw` → Claw，`/components` → 组件预览） |
 | 路由 | `src/route/index.tsx`，HashRouter |
 
 ### 关键文件
 
 - `src/App.tsx` — 根组件
-- `src/controller/index.ts` — 导出 stores 和 effects
+- `src/controller/instances.ts` — Store 单例管理（依赖注入链）
 - `src/route/index.tsx` — 路由定义与导航守卫
-- `src/components/Agent/` — 核心聊天 UI
-- `src/pages/Claw/` — Claw 主对话页（`/`，默认首页）
+- `src/components/Chat/` — 核心聊天 UI
+- `src/pages/Home/` — 首页（`/`）
+- `src/pages/Claw/` — Claw 对话页（`/claw`）
+- `src/service/chat/` — 流式聊天 API 客户端
 - `src/pages/Home/` — Chat 文本聊天页（`/c`）
 - `src/service/chat/` — 流式聊天 API 客户端
 
@@ -70,19 +72,6 @@ ComponentName/
 ```
 
 全局可复用组件 → `src/components/`；页面专属组件 → `src/pages/PageName/components/`。
-
-### 组件开发流程
-
-开发新组件时遵循"预览区 → 正式页面"的工作流：
-
-1. **在 `src/pages/Components/components/` 创建 Preview 组件**
-2. **访问 `#/components` 预览调试**
-3. **开发完成后移至正式位置**：`src/components/`（公共）或 `src/pages/PageName/components/`（页面专属）
-4. **删除预览目录**，更新 import
-
-KUI 组件（`src/components/kui/`）在此基础上，强调原子化搭建：
-- atoms/ → molecules/ → organisms/ → 完整组件
-- 参考 `kui-component-builder` Skill
 
 ### 公共组件必须满足
 
