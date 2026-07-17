@@ -46,6 +46,7 @@ export default defineConfig({
               transform: {
                 react: {
                   runtime: 'automatic',
+                  refresh: isDev,
                 },
               },
             },
@@ -85,6 +86,7 @@ export default defineConfig({
   devServer: {
     port: 8000,
     open: false,
+    hot: true,
     historyApiFallback: true,
   },
   output: {

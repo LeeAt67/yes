@@ -4,7 +4,6 @@
  * 依赖链：localStorageStore → globalStore → voiceStore / conversationStore / shareStore
  * 所有页面和组件应从这里导入实例，禁止自行 new Store()。
  *
- * 参考 MiMo Chat 架构。
  */
 
 import GlobalStore from './stores/global'
