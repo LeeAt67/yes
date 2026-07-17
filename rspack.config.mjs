@@ -1,6 +1,6 @@
 import { defineConfig } from '@rspack/cli'
 import { DefinePlugin } from '@rspack/core'
-import ReactRefreshPlugin from '@rspack/plugin-react-refresh'
+import { ReactRefreshRspackPlugin as ReactRefreshPlugin } from '@rspack/plugin-react-refresh'
 import HtmlRspackPlugin from 'html-rspack-plugin'
 import path from 'path'
 import { fileURLToPath } from 'url'

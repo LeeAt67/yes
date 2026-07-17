@@ -14,5 +14,5 @@ export function useStore() {
   return useContext(StoreContext)
 }
 
-export { RootStore, CounterStore, TodoStore }
+export { RootStore, CounterStore, TodoStore, StoreContext, rootStore }
 export default rootStore

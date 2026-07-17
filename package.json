@@ -4,7 +4,7 @@
   "version": "1.0.0",
   "type": "module",
   "scripts": {
-    "dev": "rspack serve",
+    "start": "rspack serve",
     "build": "rspack build",
     "preview": "rspack preview"
   },
@@ -24,12 +24,14 @@
     "mobx-react-lite": "^4.1.0",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
+    "react-router-dom": "^7.18.1",
     "tailwind-merge": "^3.6.0",
     "tailwindcss-animate": "^1.0.7"
   },
   "devDependencies": {
     "@rspack/cli": "^2.1.4",
     "@rspack/core": "^2.1.4",
+    "@rspack/dev-server": "^2.1.0",
     "@rspack/plugin-react-refresh": "^2.0.2",
     "@types/react": "^19.0.0",
     "@types/react-dom": "^19.0.0",
