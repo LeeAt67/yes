@@ -1,13 +1,13 @@
 import { forwardRef, useState } from 'react'
 import { cn } from '@/lib/utils'
 import { ChatInput } from './components/ChatInput'
+import Welcome from './components/Welcome'
 import { createLogger } from '@/utils/logger'
 
 const logger = createLogger('chat:page')
 
 interface ChatPageClassNames {
   root?: string
-  heading?: string
   input?: string
 }
 
@@ -32,9 +32,6 @@ const ChatPage = forwardRef<HTMLDivElement, ChatPageProps>(
       setInputValue('')
     }
 
-    const hour = new Date().getHours()
-    const greeting = hour < 12 ? '早上好' : hour < 18 ? '下午好' : '晚上好'
-
     return (
       <div
         ref={ref}
@@ -44,12 +41,7 @@ const ChatPage = forwardRef<HTMLDivElement, ChatPageProps>(
           className,
         )}
       >
-        <div className={cn('mb-8 text-center', classNames?.heading)}>
-          <h1 className="text-2xl font-semibold tracking-tight">
-            {greeting}，今天想做什么？
-          </h1>
-        </div>
-
+        <Welcome />
         <div className={cn('w-full max-w-xl', classNames?.input)}>
           <ChatInput
             value={inputValue}
