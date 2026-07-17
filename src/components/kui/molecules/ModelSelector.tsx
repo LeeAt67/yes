@@ -46,14 +46,15 @@ const ModelSelector: React.FC<ModelSelectorProps> = ({
         onClick={() => setOpen(!open)}
         disabled={disabled}
         className="gap-1 font-normal"
+        aria-label={`Model: ${value}`}
+        title={`Model: ${value}`}
       >
-        <span className="hidden sm:inline text-xs text-muted-foreground">Model:</span>
         <span className="text-xs">{value}</span>
         <ChevronDown className="h-3 w-3" />
       </Button>
 
       {open && (
-        <div className="absolute bottom-full left-0 mb-1 w-48 rounded-lg border bg-popover p-1 shadow-lg animate-in fade-in zoom-in-95">
+        <div className="absolute bottom-full left-0 mb-1 w-48 rounded-lg border bg-popover p-1 shadow-lg animate-in fade-in zoom-in-95 z-10">
           {options.map((model) => (
             <button
               key={model}

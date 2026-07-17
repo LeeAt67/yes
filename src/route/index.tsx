@@ -1,17 +1,19 @@
 import { type RouteObject } from 'react-router-dom'
+
+/**
+ * 路由定义与导航守卫
+ */
+import { createLogger } from '@/utils/logger'
+
+const logger = createLogger('route')
+
+// 页面组件
 import Layout from '@/components/Layout'
 import HomePage from '@/pages/HomePage'
 import AboutPage from '@/pages/AboutPage'
 import ChatInputDemo from '@/pages/ChatInputDemo'
 
-/**
- * 路由配置数组 — 集中管理所有路由
- *
- * 优势：
- * - 一眼看清所有路由结构
- * - 方便动态增删、权限过滤
- * - 未来可扩展 meta 信息（标题、图标、权限等）
- */
+/** 路由配置数组 */
 const routes: RouteObject[] = [
   {
     element: <Layout />,
@@ -22,5 +24,10 @@ const routes: RouteObject[] = [
     ],
   },
 ]
+
+/** 导航守卫 — 记录路由变更 */
+export const beforeRouteChange = (to: string) => {
+  logger.debug('Route changing to:', to)
+}
 
 export default routes

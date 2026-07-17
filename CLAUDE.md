@@ -1,120 +1,121 @@
-# CLAUDE.md
+# CLAUDE.md — React 19 Scaffold 项目指引
 
 ## 项目概述
 
-React 19 + MobX 6 + Tailwind CSS 3 + shadcn/ui 前端脚手架，构建工具为 Rspack 2 + SWC，集成 React Router v7 路由系统。
+React 19 + MobX 6 + Tailwind CSS 3 + shadcn/ui 前端脚手架，构建工具为 Rspack 2 + SWC，集成 React Router v7 + HashRouter 路由。
 
 ## 常用命令
 
 ```bash
-npm start          # 启动开发服务器 (http://localhost:3000)
+npm start          # 启动开发服务器 (http://localhost:8000)
 npm run build      # 生产构建
 npm run preview    # 预览生产构建
 ```
 
-## 技术栈
+---
 
-| 类别 | 技术 | 版本 |
+## 架构概览
+
+| 层级 | 路径 | 说明 |
 |------|------|------|
-| 框架 | React | ^19.0.0 |
-| 状态管理 | MobX + mobx-react-lite | ^6.13.5 / ^4.1.0 |
-| CSS | Tailwind CSS + tailwindcss-animate | ^3.4.17 |
-| 组件库 | shadcn/ui (基于 Radix UI) | — |
-| 路由 | react-router-dom | latest |
-| 构建 | Rspack + builtin:swc-loader | ^2.1.4 |
-| 语言 | TypeScript | ~5.6.2 |
-| CSS 工具 | clsx + tailwind-merge | — |
-| 图标 | lucide-react | ^1.24.0 |
+| 状态管理 | `src/controller/stores/`（global、conversation、claw、share、storage、voice） | MobX + makeAutoObservable |
+| 副作用 | `src/controller/effects/` | 应用初始化等副作用 |
+| 服务层 | `src/service/`（Zod 校验） | API 客户端 |
+| 组件库 | `src/components/kui/`（atoms / molecules / organisms） | KUI 原子化组件 |
+| 通用组件 | `src/components/` | Layout 等 |
+| 页面 | `src/pages/` | HomePage、AboutPage、ChatInputDemo |
+| 路由 | `src/route/index.tsx` | HashRouter + useRoutes() |
+| 工具 | `src/utils/` | logger |
+| 国际化 | `src/lang/` | zh-CN、en-US |
 
-## 项目结构
+### 路由结构
 
 ```
-src/
-├── App.tsx              # 根组件：StoreContext.Provider + BrowserRouter + Layout
-├── main.tsx             # 入口：createRoot + StrictMode
-├── index.css            # 全局样式：CSS 变量主题 (light/dark)
-├── global.d.ts          # 全局类型声明 (*.css, *.svg, *.png, *.jpg)
-├── components/
-│   ├── Layout.tsx       # 公共布局：导航栏 + 暗色模式切换 + <Outlet /> + 页脚
-│   ├── Counter.tsx      # MobX 计数器示例 (observer)
-│   ├── TodoList.tsx     # 待办事项示例 (observer)
-│   ├── TodoItem.tsx     # 单条待办项组件
-│   └── ui/              # shadcn/ui 组件 (badge, button, card, dialog, input, label, select)
-├── pages/
-│   ├── HomePage.tsx     # 首页：Counter + TodoList + Dialog 示例
-│   └── AboutPage.tsx    # 关于：技术栈卡片 + 项目结构
-├── stores/
-│   ├── index.ts         # RootStore + StoreContext + useStore() hook
-│   ├── CounterStore.ts  # 计数器 store (makeAutoObservable)
-│   └── TodoStore.ts     # 待办事项 store (makeAutoObservable)
-├── lib/
-│   └── utils.ts         # cn() 工具函数 (clsx + twMerge)
-└── types/
-    └── index.ts         # Todo 接口定义
+/          → HomePage    （Claude 风格问候 + ChatInput）
+/about     → AboutPage   （技术栈卡片）
+/kui       → ChatInputDemo（组件库演示）
 ```
 
-## 架构模式
+---
 
-### App.tsx 角色
+## 组件规范
 
-`App.tsx` 是应用根组件，只做三件事：
+公共组件必须满足 forwardRef + classNames + cn 模式：
+### SVG 图标
+
+使用 `lucide-react` 图标库：
 
 ```tsx
-<StoreContext.Provider value={rootStore}>   // 注入 MobX 全局状态
-  <BrowserRouter>                            // 启用客户端路由
-    <Routes>
-      <Route element={<Layout />}>           // 公共布局壳 (导航+页脚)
-        <Route index element={<HomePage />} />
-        <Route path="about" element={<AboutPage />} />
-      </Route>
-    </Routes>
-  </BrowserRouter>
-</StoreContext.Provider>
+import { Home } from 'lucide-react'
+;<Home className="h-4 w-4" />
 ```
 
-### 状态管理 (MobX)
+颜色用 `text-*` Tailwind class 控制。
 
-- `stores/index.ts` 定义 `RootStore` 单例，通过 `StoreContext` 提供
-- 子组件使用 `useStore()` hook 获取 store，用 `observer()` 包裹
-- Store 使用 `makeAutoObservable(this)` 自动追踪可观察属性
+### MobX 集成
 
-### 路由
+- 响应式组件用 `observer` 包裹（`mobx-react-lite`）
+- Store 构造函数调用 `makeAutoObservable(this)`
+- 方法统一用**箭头函数**
 
-- 嵌套路由：Layout 作为父路由，通过 `<Outlet />` 渲染子页面
-- `historyApiFallback: true` 在 rspack devServer 中处理 SPA 刷新
-- 导航链接高亮：`useLocation()` 判断当前路径
+---
 
-### 主题 (Dark Mode)
+## 代码规范
 
-- CSS 变量方案：`:root` 定义亮色，`.dark` 定义暗色
-- 切换：`document.documentElement.classList.toggle('dark')`
-- 状态持久化：初始化时读取当前 class 状态
-- tailwind.config.js 中 `darkMode: 'class'`
+- 注释用**中文**，方法写 **TSDoc**
+- 方法**必须用箭头函数**
+- 日志用 `createLogger`，禁止直接用 `console`
 
-## 关键配置
+```typescript
+import { createLogger } from '@/utils/logger'
+const logger = createLogger('模块:子模块')
+logger.warn('Failed:', error)
+```
 
-### 路径别名
+## KUI 组件库
 
-`@/` → `src/`（在 tsconfig.json 和 rspack.config.mjs 中均配置）
+```
+src/components/kui/
+├── atoms/           # Button, IconButton
+├── molecules/       # PromptTextarea, SendButton, VoiceButton, AttachButton, ModelSelector
+├── organisms/       # InputToolbar
+├── ChatInput.tsx    # 完整组件
+└── index.ts         # 统一导出
+```
 
-### SWC 配置
+Design Tokens: `src/lib/tokens.ts`、`src/index.css`（极简黑白体系）
 
-TypeScript + React 编译使用 `builtin:swc-loader`，JSX 运行时为 `automatic`。
+---
 
-### CSS 处理
+## 分支工作流 (.claude/skills/branch-workflow)
 
-PostCSS + Tailwind CSS，通过 `postcss-loader` 处理 `.css` 文件。
+- 开发新功能必须建分支：`git checkout -b feat/xxx`
+- 合并 main 前需用户许可
+- 严禁直接 push main
 
-### 开发服务器
-
-- 端口：3000
-- 自动打开浏览器
-- `historyApiFallback: true` 支持 SPA 路由
+---
 
 ## 注意事项
 
-1. 项目使用 ESM 模式 (`"type": "module"`)，所有配置文件、Tailwind 插件导入需使用 `import` 语法，不能使用 `require`
-2. `@rspack/plugin-react-refresh` 只有具名导出 `ReactRefreshRspackPlugin`，无默认导出
-3. shadcn/ui 组件依赖 `tailwindcss-animate` 插件提供动画
-4. 生产构建时 ReactRefreshPlugin 会被 `.filter(Boolean)` 移除
-5. `cn()` 函数合并 clsx 和 tailwind-merge，用于条件拼接 className 并消除冲突
+1. 项目 ESM 模式，不能用 `require`
+2. `@rspack/plugin-react-refresh` 只有具名导出
+3. `cn()` = clsx + twMerge，统一合并 className
+npm run tsc         # TypeScript 类型检查
+```
+
+
+## 组件开发流程
+
+### 公共组件开发（开发完后进 `src/components/`）
+
+工作区：`src/pages/KUI/components/`
+预览路由：`#/kui`
+
+开发完时：移至 `src/components/`，更新 import，改 status 为 `'over'`，删除开发目录。
+
+### 页面私有组件开发（永远留在页面内）
+
+工作区：`src/pages/PageName/components/Preview/components/`
+预览路由：`#/page-route/components`（如 `#/c/components`）
+
+开发完时：移至 `src/pages/PageName/components/`，更新 import，改 status，删除开发目录。

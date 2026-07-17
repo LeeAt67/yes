@@ -1,0 +1,13 @@
+{
+  "auth": {
+    "status": {
+      "not_logged_in": "未登录"
+    }
+  },
+  "common": {
+    "ok": "确定",
+    "cancel": "取消",
+    "save": "保存",
+    "delete": "删除"
+  }
+}

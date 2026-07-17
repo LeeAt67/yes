@@ -1,0 +1,13 @@
+{
+  "auth": {
+    "status": {
+      "not_logged_in": "Not logged in"
+    }
+  },
+  "common": {
+    "ok": "OK",
+    "cancel": "Cancel",
+    "save": "Save",
+    "delete": "Delete"
+  }
+}
