@@ -1,56 +1,90 @@
 # YES — Claude Code 项目指引
 
-## 项目概述
+## 读代码前先看 AGENTS.md
 
-YES 是 React 19 + TypeScript + MobX 6 + Tailwind CSS 3 的 AI 对话应用，构建工具为 Rspack 2 + SWC。
+处理任何模块文件夹（组件、hook、工具函数、服务、store）时，**先检查是否存在 AGENTS.md**，再读源文件。
 
-## 常用命令
+优先级：AGENTS.md → 源文件。
 
-```bash
-npm start          # 开发服务器 (http://localhost:8000)
-npm run build      # 生产构建
+AGENTS.md 位置规律：
 ```
+src/components/ComponentName/AGENTS.md
+src/hooks/useHookName/AGENTS.md
+src/utils/utilName/AGENTS.md
+src/service/serviceName/AGENTS.md
+src/controller/stores/storeName/AGENTS.md
+```
+
+**修改模块逻辑后，若该模块存在 AGENTS.md，必须同步更新文档。**
+
+---
+
+## Figma 设计稿
+
+收到任何 Figma 链接时，先读 `.agents/skills/figma-to-code/SKILL.md`，再生成代码。
+
+- 严禁使用 px，只能用 rem
+- Figma MCP 返回的原始色值不可直接用于代码，必须映射为项目 Design Token
 
 ---
 
 ## 架构概览
 
-YES 采用分层架构：
+Demo 是 React + TypeScript + MobX + Tailwind CSS 的通用应用，拥有多项功能。
 
-| 层级 | 路径 | 说明 |
-|------|------|------|
-| 状态管理 | `src/controller/stores/`（global、conversation、claw、share、storage、voice） | MobX makeAutoObservable |
-| 副作用 | `src/controller/effects/` | 应用初始化 |
-| 服务层 | `src/service/chat/`（Zod 校验） | 聊天 API |
-| 公共组件 | `src/components/` | Layout |
-| KUI 组件 | `src/components/kui/`（atoms / molecules / organisms） | 原子化组件库 |
-| 页面 | `src/pages/` | HomePage、AboutPage、ChatInputDemo |
-| 路由 | `src/route/index.tsx` | HashRouter + useRoutes |
-| 工具 | `src/utils/logger.ts` | createLogger |
-| 国际化 | `src/lang/` | zh-CN、en-US |
-| Design Tokens | `src/lib/tokens.ts`、`src/index.css` | 极简黑白体系 |
+| 层级 | 路径 |
+|------|------|
+| 状态管理 | `src/controller/stores/`（global、conversation、claw、share、storage、voice） |
+| 副作用 | `src/controller/effects/` |
+| 服务层 | `src/service/`（用 Zod 做运行时类型校验） |
+| 组件 | `src/components/` |
+| 页面 | `src/pages/`（`/` → Claw，`/c` → Home） |
+| 路由 | `src/route/index.tsx`，HashRouter |
 
 ### 关键文件
 
-- `src/App.tsx` — 根组件（HashRouter）
+- `src/App.tsx` — 根组件
 - `src/controller/index.ts` — 导出 stores 和 effects
-- `src/route/index.tsx` — 路由配置
-- `src/components/Layout.tsx` — 主布局（左侧栏 + 内容区）
-- `src/service/chat/` — 聊天 API 客户端
-
-### 路由
-
-```
-#/           → HomePage    （Claude 风格对话首页）
-#/about      → AboutPage   （关于页）
-#/kui        → ChatInputDemo（组件库演示）
-```
+- `src/route/index.tsx` — 路由定义与导航守卫
+- `src/components/Agent/` — 核心聊天 UI
+- `src/pages/Claw/` — Claw 主对话页（`/`，默认首页）
+- `src/pages/Home/` — Chat 文本聊天页（`/c`）
+- `src/service/chat/` — 流式聊天 API 客户端
 
 ---
 
 ## 组件规范
 
-公共组件必须满足 forwardRef + classNames + cn 模式：
+### 目录结构
+
+每个组件一个独立文件夹，入口始终为 `index.tsx`：
+
+```
+ComponentName/
+├── index.tsx
+├── style.module.less
+├── components/        # 仅本组件使用的子组件
+├── hooks/             # 组件专属 Hook（可选）
+├── utils/             # 组件专属工具函数（可选）
+└── assets/            # 组件专属资源（可选）
+```
+
+全局可复用组件 → `src/components/`；页面专属组件 → `src/pages/PageName/components/`。
+
+### 组件开发流程
+
+开发新组件时遵循"预览区 → 正式页面"的工作流：
+
+1. **在 `src/pages/Components/components/` 创建 Preview 组件**
+2. **访问 `#/components` 预览调试**
+3. **开发完成后移至正式位置**：`src/components/`（公共）或 `src/pages/PageName/components/`（页面专属）
+4. **删除预览目录**，更新 import
+
+KUI 组件（`src/components/kui/`）在此基础上，强调原子化搭建：
+- atoms/ → molecules/ → organisms/ → 完整组件
+- 参考 `kui-component-builder` Skill
+
+### 公共组件必须满足
 
 ```tsx
 import { forwardRef } from 'react'
@@ -79,68 +113,104 @@ MyComponent.displayName = 'MyComponent'
 export default MyComponent
 ```
 
-图标使用 `lucide-react`，颜色用 `text-*` Tailwind class 控制。
+要点：`forwardRef`、`classNames` prop（细粒度定制）、`className` prop（整体覆盖）、始终用 `cn` 合并类名。
 
----
+### SVG 图标
 
-## MobX 集成
+```tsx
+import XxxIcon from '@/assets/svg/xxx.svg'
+;<XxxIcon className="text-mimo-icon-n1 h-4 w-4" />
+```
+
+SVG 组件只接受 `className`，不接受 `classNames`。颜色用 `text-*` 控制（需 SVG 内部 `fill="currentColor"`）。
+
+### MobX 集成
 
 - 响应式组件用 `observer` 包裹（`mobx-react-lite`）
 - Store 构造函数调用 `makeAutoObservable(this)`
-- 方法统一用箭头函数
+- 批量状态修改用 `runInAction()`
 
 ---
 
 ## 代码规范
 
-- 注释用中文，方法写 TSDoc
-- 方法一律用箭头函数
-- 日志用 `createLogger`，禁止直接用 `console`
+### 注释与文档
+
+- 所有注释和文档一律用**中文**
+- 所有方法必须写 **TSDoc** 格式文档注释
+- 方法统一用**箭头函数**
+- 方法内复杂逻辑补充中文行内注释（说明意图，不重复字面意思）
+
+```typescript
+/**
+ * 发送聊天消息并处理流式响应。
+ *
+ * @param content - 消息内容
+ * @param options - 可选配置项
+ * @returns 返回本次消息对应的 AbortController，用于取消请求
+ */
+export const sendMessage = (content: string, options?: SendOptions): AbortController => {
+  const payload = buildPayload(content, options)
+  const controller = new AbortController()
+  streamChat(payload, controller.signal)
+  return controller
+}
+```
+
+### 日志规范
+
+**禁止直接使用 `console.log/warn/error`**，必须用 `createLogger`：
 
 ```typescript
 import { createLogger } from '@/utils/logger'
-const logger = createLogger('模块:子模块')
+const logger = createLogger('claw:resource')
+
+// 服务端接口失败 → warn
+logger.warn('Failed to get chat history:', error)
+
+// 本地程序错误 → error
+logger.error('Failed to enable microphone:', error)
+
+// 调试日志 → debug（生产不打印）
+logger.debug('retract_message RPC called:', payload)
 ```
 
-国际化：
+模块命名约定：`大模块:子模块`，如 `claw:resource`、`conversation:message`、`voice:config`。
 
-```typescript
-import { t } from '@/lang'
-t('common.ok')  // 确定
+### 国际化
+
+- 翻译文件：`src/lang/`（en-US、zh-CN），12 个按模块划分的 JSON 文件
+- Key 规范：`模块.分类.条目`，如 `t('auth.status.not_logged_in')`
+- 变量插值用**单花括号**：`{variable}`（不是双花括号）
+
 ```
-
-变量插值用单花括号：`{variable}`
+✅ "Demo only processed the first {ratio}%"
+❌ "Demo only processed the first {{ratio}}%"
+```
 
 ---
 
-## KUI 组件库
+## 每次编码完成后必须执行
 
-```
-src/components/kui/
-├── atoms/           # Button、IconButton
-├── molecules/       # PromptTextarea、SendButton、VoiceButton 等
-├── organisms/       # InputToolbar
-├── ChatInput.tsx    # 完整组件
-└── index.ts         # 统一导出
-```
+**按顺序执行，修复所有问题后再结束任务：**
 
-搭建新组件遵循 `.claude/skills/kui-component-builder/SKILL.md`
+```bash
+# 第一步：TypeScript 类型检查
+npx tsgo --noEmit
+
+# 第二步：ESLint 检查（针对改动文件）
+npx eslint <file-path> --format=compact
+npx eslint <file-path> --fix   # 自动修复
+```
 
 ---
 
-## 分支工作流
+## 开发命令
 
-- 开发新功能必须建分支：`git checkout -b feat/xxx`
-- 合并 main 前需用户许可
-- 严禁直接 push main
-
----
-
-## 注意事项
-
-1. ESM 模式，不能用 `require`
-2. `@rspack/plugin-react-refresh` 只有具名导出
-3. `cn()` = clsx + twMerge
+```bash
+npm start           # 开发服务器（热重载）
+npm run build       # 生产构建
+npm run lint        # ESLint + Stylelint + Prettier
 npm run tsc         # TypeScript 类型检查
 ```
 

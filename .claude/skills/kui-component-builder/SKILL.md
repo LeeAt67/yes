@@ -22,8 +22,9 @@ argument-hint: 'Describe the complex component to build (e.g. "a Claude-style ch
 - KUI 组件库路径：`src/components/kui/`
 - 层级目录：`atoms/` → `molecules/` → `organisms/` → `ChatInput.tsx` (完整组件)
 - 导出索引：`src/components/kui/index.ts`
-- Demo 页面：`src/pages/` （命名格式 `{ComponentName}Demo.tsx`）
-- 路由注册：`src/routes.tsx`，路径格式 `/kui-{name}`
+- Demo 页面：`src/pages/Components/components/`（预览区）
+- Demo 路由：`#/components`
+- 路由注册：`src/route/index.tsx`
 - 基础原子 Button 位于 `src/components/kui/atoms/Button.tsx`，提供 6 种 variant + 5 种 size
 - IconButton 位于 `src/components/kui/atoms/IconButton.tsx`，封装 Button 为图标按钮
 - 项目使用 Tailwind CSS + shadcn/ui + lucide-react 图标
