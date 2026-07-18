@@ -174,6 +174,19 @@ export const sendMessage = (content: string, options?: SendOptions): AbortContro
 }
 ```
 
+### 环境变量
+
+**严禁使用 `??` 兜底默认值。** 所有配置从环境变量读取，缺失时启动即报错，不允许静默降级。
+
+```typescript
+// ✅ 正确 — 无默认值，启动即报错
+const secret = process.env.JWT_SECRET!
+const apiUrl = process.env.LLM_API_URL!
+
+// ❌ 禁止 — 隐藏配置缺失问题
+const secret = process.env.JWT_SECRET ?? 'fallback-secret'
+```
+
 ### 日志规范
 
 **禁止直接使用 `console.log/warn/error`**，必须用 `createLogger`：

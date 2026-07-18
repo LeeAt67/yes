@@ -24,4 +24,4 @@ COPY --from=builder /app/dist /app/dist
 
 ENV PORT=8001
 EXPOSE 8001
-CMD ["node", "dist/index.js"]
+CMD ["node", "dist/main.js"]
