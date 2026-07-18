@@ -192,6 +192,8 @@ const MarkdownCore = memo(
     return (
       <ReactMarkdown
         remarkPlugins={[remarkGfm, remarkMath, remarkHtml]}
+        // rehypeRaw 必须在 rehypeKatex 之前：先解析原始 HTML 生成完整 hast 节点，
+        // rehypeKatex 才能正确识别其中的数学公式
         rehypePlugins={[rehypeRaw, rehypeKatex]}
         components={{ code: codeComponent }}
       >

@@ -115,7 +115,7 @@ const ChatPage = forwardRef<HTMLDivElement, ChatPageProps>(
                         <Markdown
                           content={msg.content}
                           isTyping={streaming && msg.role === 'assistant'}
-                          blockMode={streaming && msg.role === 'assistant'}
+                          blockMode
                         />
                       ) : streaming ? (
                         <span className="italic text-muted-foreground">思考中…</span>

@@ -60,21 +60,19 @@ export const replaceDelimiters = (input: string): string => {
  * @returns 裁剪末尾未闭合定界符后的内容
  */
 const trimUnclosedDelimiters = (text: string): string => {
-  // 裁掉末尾的 \( 或 \[
-  let result = text.replace(/\\[([\s\S]*$/, '').replace(/\\\([\s\S]*$/, '')
+  let result = text
 
-  // $$ 计数为奇数时，说明最后一个 $$ 未闭合，裁掉
+  // $$ 计数为奇数 → 最后一个 $$ 是未闭合的块级公式
+  // 补 \n$$ 临时闭合，保留已输出内容可见，避免页面假死
   const ddCount = (result.match(/\$\$/g) ?? []).length
   if (ddCount % 2 !== 0) {
-    const lastIdx = result.lastIndexOf('$$')
-    if (lastIdx !== -1) result = result.slice(0, lastIdx)
+    result = result.trimEnd() + '\n$$'
   }
 
-  // 单个 $ 计数为奇数时，末尾行内公式未闭合，裁掉
+  // 单 $ 计数为奇数 → 行内公式未闭合，末尾补 $ 闭合
   const singleCount = (result.match(/(?<!\$)\$(?!\$)/g) ?? []).length
   if (singleCount % 2 !== 0) {
-    const lastIdx = result.lastIndexOf('$')
-    if (lastIdx !== -1) result = result.slice(0, lastIdx)
+    result = result + '$'
   }
 
   return result
