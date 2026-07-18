@@ -10,7 +10,7 @@ import { conversationStore, authStore } from '@/controller/instances'
 
 const logger = createLogger('chat:page')
 
-const DEFAULT_MODELS = ['deepseek-chat', 'deepseek-reasoner']
+const DEFAULT_MODELS = ['deepseek-v4-pro', 'deepseek-v4-flash']
 
 interface ChatPageClassNames {
   root?: string
@@ -30,7 +30,7 @@ export interface ChatPageProps {
 const ChatPage = forwardRef<HTMLDivElement, ChatPageProps>(
   ({ className, classNames }, ref) => {
     const [inputValue, setInputValue] = useState('')
-    const [model, setModel] = useState('deepseek-chat')
+    const [model, setModel] = useState('deepseek-v4-pro')
     const [models, setModels] = useState<string[]>(DEFAULT_MODELS)
     const { messages, streaming, conversationId } = conversationStore
     const abortRef = useRef<AbortController | null>(null)
@@ -115,6 +115,7 @@ const ChatPage = forwardRef<HTMLDivElement, ChatPageProps>(
                         <Markdown
                           content={msg.content}
                           isTyping={streaming && msg.role === 'assistant'}
+                          blockMode={streaming && msg.role === 'assistant'}
                         />
                       ) : streaming ? (
                         <span className="italic text-muted-foreground">思考中…</span>

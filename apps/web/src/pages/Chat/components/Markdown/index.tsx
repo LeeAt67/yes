@@ -12,6 +12,7 @@ import { cn, createLogger } from '@yes/shared'
 import CodeBlock from './CodeBlock'
 import { preprocessContent } from './utils/katex'
 import rehypeRaw from './utils/rehypeRaw'
+import { splitMarkdownIntoBlocks } from './utils/splitBlocks'
 
 export interface MarkdownProps {
   /** 外部样式类名 */
@@ -20,6 +21,14 @@ export interface MarkdownProps {
   content: string
   /** 是否正在流式输出 */
   isTyping?: boolean
+  /**
+   * 是否启用分块记忆化渲染。
+   *
+   * 开启后按安全空行将 content 切分为多个 block，
+   * 已完成 block memo 冻结，仅尾块随流式更新重新解析，
+   * 将全量重解析 O(N²) 降为增量解析 O(N)。
+   */
+  blockMode?: boolean
 }
 
 // ── 错误边界 ──
@@ -84,13 +93,78 @@ const getContentKey = (text: string) => `${text.length}:${text.slice(0, 128)}`
  * - 内嵌原始 HTML（安全过滤：危险标签降级为纯文本）
  * - 代码块语法高亮（Shiki，流式中禁用，行号展示）
  * - 渲染错误→纯文本降级
+ * - blockMode 分块渲染（O(N²) → O(N)）
  */
 const Markdown = memo(
-  ({ className, content, isTyping = false }: MarkdownProps) => {
-    const processedContent = preprocessContent(content)
+  ({ className, content, isTyping = false, blockMode = false }: MarkdownProps) => {
+    const processedContent = preprocessContent(content, isTyping)
+
+    // 分块模式：按安全空行切分
+    const blocks = useMemo(
+      () => (blockMode ? splitMarkdownIntoBlocks(processedContent) : [processedContent]),
+      [blockMode, processedContent],
+    )
+
     const contentKey = getContentKey(processedContent)
 
-    /** 代码渲染组件，根据是否为代码块决定使用 CodeBlock 还是行内 code */
+    if (blockMode) {
+      // 分块模式：已完成 block memo 冻结，仅尾块随流式更新
+      return (
+        <MarkdownErrorBoundary resetKey={contentKey} isTyping={isTyping}>
+          <div className={cn('markdown-prose select-text', className)}>
+            {blocks.slice(0, -1).map((block, i) => (
+              <MarkdownCoreMemo
+                key={`block-${i}-frozen`}
+                content={block}
+                isTyping={false}
+              />
+            ))}
+            {blocks.length > 0 && (
+              <MarkdownCoreMemo
+                key="block-tail"
+                content={blocks[blocks.length - 1]}
+                isTyping={isTyping}
+              />
+            )}
+          </div>
+        </MarkdownErrorBoundary>
+      )
+    }
+
+    // 默认模式：整块渲染
+    return (
+      <MarkdownErrorBoundary resetKey={contentKey} isTyping={isTyping}>
+        <div className={cn('markdown-prose select-text', className)}>
+          <MarkdownCoreMemo content={processedContent} isTyping={isTyping} />
+        </div>
+      </MarkdownErrorBoundary>
+    )
+  },
+  (prev, next) =>
+    prev.content === next.content &&
+    prev.isTyping === next.isTyping &&
+    prev.className === next.className &&
+    prev.blockMode === next.blockMode,
+)
+
+Markdown.displayName = 'Markdown'
+
+// ── MarkdownCore（内部 memo 子组件） ──
+
+interface MarkdownCoreProps {
+  content: string
+  isTyping: boolean
+}
+
+/**
+ * 单块 Markdown 渲染器（内部使用）。
+ *
+ * 封装完整的 ReactMarkdown 渲染逻辑。
+ * memo 包裹：blockMode 下各 block 的 props 不变时跳过重渲染。
+ */
+const MarkdownCore = memo(
+  ({ content, isTyping }: MarkdownCoreProps) => {
+    /** 代码渲染组件 */
     const codeComponent = useMemo(
       () =>
         ({
@@ -100,7 +174,6 @@ const Markdown = memo(
           const match = /language-(\w+)/.exec(cls || '')
           const text = String(children ?? '')
 
-          // 行内代码
           if (!match && !text.includes('\n')) {
             return <code className="codespan">{children}</code>
           }
@@ -117,30 +190,22 @@ const Markdown = memo(
     )
 
     return (
-      <MarkdownErrorBoundary resetKey={contentKey} isTyping={isTyping}>
-        <div className={cn('markdown-prose select-text', className)}>
-          <ReactMarkdown
-            remarkPlugins={[remarkGfm, remarkMath, remarkHtml]}
-            rehypePlugins={[
-              // rehypeRaw 必须在 rehypeKatex 之前：
-              // 先由 rehypeRaw 解析原始 HTML 生成完整 hast 节点，
-              // rehypeKatex 才能正确识别其中的数学公式。
-              rehypeRaw,
-              rehypeKatex,
-            ]}
-            components={{ code: codeComponent }}
-          >
-            {processedContent}
-          </ReactMarkdown>
-        </div>
-      </MarkdownErrorBoundary>
+      <ReactMarkdown
+        remarkPlugins={[remarkGfm, remarkMath, remarkHtml]}
+        rehypePlugins={[rehypeRaw, rehypeKatex]}
+        components={{ code: codeComponent }}
+      >
+        {content}
+      </ReactMarkdown>
     )
   },
   (prev, next) =>
-    prev.content === next.content &&
-    prev.isTyping === next.isTyping &&
-    prev.className === next.className,
+    prev.content === next.content && prev.isTyping === next.isTyping,
 )
 
-Markdown.displayName = 'Markdown'
+MarkdownCore.displayName = 'MarkdownCore'
+
+/** 稳定引用版本，供 blockMode 外部引用 */
+const MarkdownCoreMemo = MarkdownCore
+
 export default Markdown

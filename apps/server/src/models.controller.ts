@@ -2,8 +2,8 @@ import { Controller, Get } from '@nestjs/common'
 
 /** DeepSeek 可用模型 */
 const AVAILABLE_MODELS = [
-  { id: 'deepseek-chat', label: 'DeepSeek Chat', desc: '通用对话模型' },
-  { id: 'deepseek-reasoner', label: 'DeepSeek Reasoner', desc: '深度推理模型' },
+  { id: 'deepseek-v4-pro', label: 'DeepSeek V4 Pro', desc: '旗舰对话模型' },
+  { id: 'deepseek-v4-flash', label: 'DeepSeek V4 Flash', desc: '快速轻量模型' },
 ]
 
 export interface ModelInfo {

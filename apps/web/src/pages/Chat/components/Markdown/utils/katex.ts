@@ -1,66 +1,93 @@
 /**
- * KaTeX 定界符列表：将各种 LaTeX 定界符统一替换为 $$...$$ 格式。
+ * 内联公式正则：匹配 `\(...\)`，捕获内部内容（支持多行、转义字符）。
+ * 对应 remark-math 行内语法 `$...$`。
  */
-const DELIMITER_LIST = [
-  { left: '$$', right: '$$', display: true },
-  { left: '\\(', right: '\\)', display: false },
-  { left: '\\[', right: '\\]', display: true },
-  { left: '\\begin{equation}', right: '\\end{equation}', display: true },
-] as const
-
-/** 正则元字符转义 */
-const escapeRegex = (s: string): string => s.replace(/[$()*+./?[\\]^{|}-]/g, '\\$&')
-
-/** 生成匹配所有定界符的正则 */
-const buildRegex = (): RegExp => {
-  const parts = DELIMITER_LIST.map(({ left, right }) => {
-    const el = escapeRegex(left)
-    const er = escapeRegex(right)
-    return `${el}((?:\\\\[^]|[^\\\\])+?)${er}`
-  })
-  return new RegExp(`(${parts.join('|')})`, 'g')
-}
-
-const DELIMITER_REGEX = buildRegex()
-
-/** 提取定界符内部纯内容 */
-const extractContent = (match: string): string =>
-  match
-    .replace(/^\$\$|\\\[\$|\\begin{equation}|\$|\\\(|\\\[/, '')
-    .replace(/\$\$|\\]\$|\\end{equation}|\$|\\\)|\\]/, '')
+const INLINE_MATH_RE = /\\\(((?:\\[^]|[^\\])*?)\\\)/g
 
 /**
- * 将输入中的各种 LaTeX 定界符统一替换为 `$$...$$` 格式，
- * 确保 remark-math + rehype-katex 能正确识别。
+ * 块级公式正则：匹配 `\[...\]`，捕获内部内容（支持多行、转义字符）。
+ * 对应 remark-math 块级语法 `$$...$$`。
+ */
+const DISPLAY_BRACKET_RE = /\\\[((?:\\[^]|[^\\])*?)\\\]/g
+
+/**
+ * equation 环境正则：匹配 `\begin{equation}...\end{equation}`。
+ */
+const EQUATION_ENV_RE = /\\begin\{equation\}((?:\\[^]|[^\\])*?)\\end\{equation\}/g
+
+/**
+ * 将输入中的各种 LaTeX 定界符规范化：
  *
- * 处理：
- * - `\(...\)` → `$$...$$`（行内公式）
- * - `\[...\]` / `\begin{equation}...\end{equation}` → `$$...$$`（块级公式）
- * - `$$...$$` → 保持不变
- * - 同时去除每行行末空格
+ * - `\(...\)`                          → `$...$`（行内公式，remark-math inline）
+ * - `\[...\]`                          → `$$...$$`（块级公式，remark-math display）
+ * - `\begin{equation}...\end{equation}` → `$$...$$`（块级公式）
+ * - `$$...$$`                          → 保持不变
+ *
+ * 关键：`\(...\)` 必须转为单 `$`，而非 `$$`。
+ * `remark-math` 将 `$$` 视为 display math（块元素），若出现在段落中间会破坏行内排版。
  *
  * @param input - 原始 Markdown 内容
- * @returns 定界符统一后的内容
+ * @returns 定界符规范化后的内容
  */
 export const replaceDelimiters = (input: string): string => {
   if (!input) return ''
 
   // 去行末空格，避免影响公式渲染
-  const trimmed = input.replace(/[\t ]+$/gm, '')
+  let result = input.replace(/[\t ]+$/gm, '')
 
-  return trimmed.replace(DELIMITER_REGEX, (match: string) => {
-    const content = extractContent(match)
-    return `$$${content}$$`
-  })
+  // \begin{equation}...\end{equation} → $$...$$（块级）
+  result = result.replace(EQUATION_ENV_RE, (_, content: string) => `$$${content}$$`)
+
+  // \[...\] → $$...$$（块级）
+  result = result.replace(DISPLAY_BRACKET_RE, (_, content: string) => `$$${content}$$`)
+
+  // \(...\) → $...$（行内）— 不能用 $$，否则 remark-math 渲染为块元素破坏行内排版
+  result = result.replace(INLINE_MATH_RE, (_, content: string) => `$${content}$`)
+
+  return result
+}
+
+/**
+ * 流式中末尾可能残留未闭合的定界符（LLM 还没输出完），
+ * 裁剪掉这些残留前缀，避免它把后续正文全部吃进公式。
+ *
+ * 处理的残留形式：
+ * - 末尾的 `\(`（行内公式未闭合）
+ * - 末尾的 `\[`（块级公式未闭合）
+ * - 末尾的 `$$`（奇数个 `$$` 时最后一个未闭合）
+ *
+ * @param text - 已做定界符替换后的内容
+ * @returns 裁剪末尾未闭合定界符后的内容
+ */
+const trimUnclosedDelimiters = (text: string): string => {
+  // 裁掉末尾的 \( 或 \[
+  let result = text.replace(/\\[([\s\S]*$/, '').replace(/\\\([\s\S]*$/, '')
+
+  // $$ 计数为奇数时，说明最后一个 $$ 未闭合，裁掉
+  const ddCount = (result.match(/\$\$/g) ?? []).length
+  if (ddCount % 2 !== 0) {
+    const lastIdx = result.lastIndexOf('$$')
+    if (lastIdx !== -1) result = result.slice(0, lastIdx)
+  }
+
+  // 单个 $ 计数为奇数时，末尾行内公式未闭合，裁掉
+  const singleCount = (result.match(/(?<!\$)\$(?!\$)/g) ?? []).length
+  if (singleCount % 2 !== 0) {
+    const lastIdx = result.lastIndexOf('$')
+    if (lastIdx !== -1) result = result.slice(0, lastIdx)
+  }
+
+  return result
 }
 
 /**
  * 预处理 Markdown 内容：定界符统一 + 特殊标签转义。
  *
  * @param input - 原始内容
+ * @param isTyping - 是否正在流式输出；为 true 时会裁剪末尾未闭合的定界符
  * @returns 可直接传入 react-markdown 的内容
  */
-export const preprocessContent = (input: string): string => {
+export const preprocessContent = (input: string, isTyping = false): string => {
   if (!input) return ''
 
   // 转义 <think> 标签（防止被 rehypeRaw 当作 HTML 吃掉）
@@ -68,5 +95,8 @@ export const preprocessContent = (input: string): string => {
     .replace(/<think>/g, '&lt;think&gt;')
     .replace(/<\/think>/g, '&lt;/think&gt;')
 
-  return replaceDelimiters(escaped)
+  const replaced = replaceDelimiters(escaped)
+
+  // 流式时裁剪末尾未闭合的定界符，防止后续正文被误吞为公式
+  return isTyping ? trimUnclosedDelimiters(replaced) : replaced
 }
