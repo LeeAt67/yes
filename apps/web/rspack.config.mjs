@@ -4,10 +4,17 @@ import { ReactRefreshRspackPlugin as ReactRefreshPlugin } from '@rspack/plugin-r
 import HtmlRspackPlugin from 'html-rspack-plugin'
 import path from 'path'
 import { fileURLToPath } from 'url'
+import dotenv from 'dotenv'
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
 const isDev = process.env.NODE_ENV !== 'production'
+
+// 读取 .env 文件 — 缺失直接报错
+const envConfig = dotenv.config({ path: path.resolve(__dirname, '.env') })
+if (envConfig.error) throw new Error(`Failed to load .env: ${envConfig.error.message}`)
+const env = envConfig.parsed
+if (!env.API_BASE_URL) throw new Error('API_BASE_URL is required in .env')
 
 export default defineConfig({
   mode: isDev ? 'development' : 'production',
@@ -29,6 +36,7 @@ export default defineConfig({
       'process.env.NODE_ENV': JSON.stringify(
         isDev ? 'development' : 'production',
       ),
+      'process.env.API_BASE_URL': JSON.stringify(env.API_BASE_URL),
     }),
   ].filter(Boolean),
   module: {

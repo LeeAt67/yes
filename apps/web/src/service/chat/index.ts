@@ -3,8 +3,12 @@ import { createLogger, Req } from '@yes/shared'
 
 const logger = createLogger('service:chat')
 
-/** API 请求实例 — 开发环境指向本地后端，生产通过反向代理同源访问 */
-const api = new Req({ baseURL: process.env.API_BASE_URL ?? 'http://localhost:3001' })
+/** API 请求实例 — prod 走环境变量，dev 走本地 8081 */
+const API_BASE = process.env.NODE_ENV === 'production'
+  ? process.env.API_BASE_URL!
+  : 'http://localhost:8081'
+
+const api = new Req({ baseURL: API_BASE })
 
 /** 聊天消息 schema */
 export const messageSchema = z.object({

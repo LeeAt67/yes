@@ -13,6 +13,10 @@ export interface MessageItem {
  */
 class ConversationStore {
   messages: MessageItem[] = []
+  /** 会话 ID — 多轮对话复用 */
+  conversationId = crypto.randomUUID()
+  /** 是否正在加载 */
+  streaming = false
 
   constructor() {
     makeAutoObservable(this)
@@ -23,12 +27,27 @@ class ConversationStore {
     return this.messages[this.messages.length - 1]
   }
 
+  /** 添加一条完整消息 */
   addMessage = (msg: Omit<MessageItem, 'id' | 'createdAt'>) => {
     this.messages.push({
       ...msg,
       id: crypto.randomUUID(),
       createdAt: Date.now(),
     })
+  }
+
+  /** 追加 token 到最新一条 assistant 消息末尾 */
+  appendToken = (token: string) => {
+    const last = this.messages[this.messages.length - 1]
+    if (last && last.role === 'assistant') {
+      last.content += token
+    }
+  }
+
+  /** 开始新一轮对话 */
+  newConversation = () => {
+    this.messages = []
+    this.conversationId = crypto.randomUUID()
   }
 
   clearMessages = () => {
