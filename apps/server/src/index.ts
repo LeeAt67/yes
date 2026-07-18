@@ -2,7 +2,7 @@ import { Hono } from 'hono'
 import { cors } from 'hono/cors'
 import { logger } from 'hono/logger'
 import { serve } from '@hono/node-server'
-import { chatRouter } from './routes/chat'
+import { chatRouter } from './routes/chat.js'
 
 /**
  * YES 后端服务。
