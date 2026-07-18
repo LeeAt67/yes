@@ -35,10 +35,12 @@ Demo 是 React + TypeScript + MobX + Tailwind CSS 的 monorepo 应用。
 ```
 demo/
 ├── src/                     ← 前端应用（路由、页面、store、service）
+├── apps/
+│   └── server/              ← 后端服务（Hono，SSE 流式 API）
 ├── packages/
 │   ├── shared/              ← 通用工具：cn()、createLogger、tokens
 │   └── ui/                  ← 通用 UI 组件：Button、Sidebar、SidebarNav...
-├── package.json             ← workspaces: ["packages/*"]
+├── package.json             ← workspaces: ["apps/*", "packages/*"]
 └── rspack.config.mjs
 ```
 
@@ -71,15 +73,11 @@ import Layout from '@/components/Layout'
 
 ### 关键文件
 
-- `src/App.tsx` — 根组件
-- `src/controller/instances.ts` — Store 单例管理（依赖注入链）
-- `src/route/index.tsx` — 路由定义与导航守卫
-- `src/components/Chat/` — 核心聊天 UI
-- `src/pages/Home/` — 首页（`/`）
-- `src/pages/Claw/` — Claw 对话页（`/claw`）
-- `src/service/chat/` — 流式聊天 API 客户端
-- `src/pages/Home/` — Chat 文本聊天页（`/c`）
-- `src/service/chat/` — 流式聊天 API 客户端
+- `apps/web/src/App.tsx` — 根组件
+- `apps/web/src/controller/instances.ts` — Store 单例管理（依赖注入链）
+- `apps/web/src/route/index.tsx` — 路由定义与导航守卫
+- `apps/web/src/pages/Home/` — 首页（`/`）
+- `apps/web/src/pages/Claw/` — Claw 对话页（`/claw`）
 
 ---
 
@@ -227,25 +225,23 @@ npx eslint <file-path> --fix   # 自动修复
 ## 开发命令
 
 ```bash
-npm start           # 开发服务器（热重载）
-npm run build       # 生产构建
-npm run lint        # ESLint + Stylelint + Prettier
-npm run tsc         # TypeScript 类型检查
+npm run dev           # 前端开发服务器（热重载，端口 8000）
+npm run dev:server    # 后端服务（watch 模式，端口 3001）
+npm run build         # 前端生产构建
+npm run typecheck     # TypeScript 类型检查
 ```
 
 
 ## 组件开发流程
 
-### 公共组件开发（开发完后进 `src/components/`）
+### 公共组件开发（开发完后进 `packages/ui/src/`）
 
-工作区：`src/pages/KUI/components/`
-预览路由：`#/kui`
+工作区：`apps/web/src/pages/ComponentPreview/components/`
+预览路由：`#/components`
 
-开发完时：移至 `src/components/`，更新 import，改 status 为 `'over'`，删除开发目录。
+开发完时：移至 `packages/ui/src/`，更新 import，导出到 `packages/ui/src/index.ts`，删除开发目录。
 
 ### 页面私有组件开发（永远留在页面内）
 
-工作区：`src/pages/PageName/components/Preview/components/`
-预览路由：`#/page-route/components`（如 `#/c/components`）
-
-开发完时：移至 `src/pages/PageName/components/`，更新 import，改 status，删除开发目录。
+工作区：`apps/web/src/pages/PageName/components/`
+预览路由：`#/page-route`（如 `#/claw`）

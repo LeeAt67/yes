@@ -1,52 +1,14 @@
 {
   "name": "yes-monorepo",
   "private": true,
-  "type": "module",
   "workspaces": [
+    "apps/*",
     "packages/*"
   ],
   "scripts": {
-    "start": "rspack serve",
-    "build": "rspack build",
-    "preview": "rspack preview",
-    "typecheck": "tsc --noEmit"
-  },
-  "dependencies": {
-    "@radix-ui/react-checkbox": "^1.3.7",
-    "@radix-ui/react-dialog": "^1.1.19",
-    "@radix-ui/react-dropdown-menu": "^2.1.20",
-    "@radix-ui/react-label": "^2.1.11",
-    "@radix-ui/react-select": "^2.3.3",
-    "@radix-ui/react-slot": "^1.3.0",
-    "@radix-ui/react-switch": "^1.3.3",
-    "@radix-ui/react-toast": "^1.2.19",
-    "@svgr/webpack": "^8.1.0",
-    "class-variance-authority": "^0.7.1",
-    "clsx": "^2.1.1",
-    "lucide-react": "^1.24.0",
-    "mobx": "^6.13.5",
-    "mobx-react-lite": "^4.1.0",
-    "react": "^19.0.0",
-    "react-dom": "^19.0.0",
-    "react-resizable-panels": "^4.12.2",
-    "react-router-dom": "^7.18.1",
-    "tailwind-merge": "^3.6.0",
-    "tailwindcss-animate": "^1.0.7",
-    "zod": "^4.4.3"
-  },
-  "devDependencies": {
-    "@rspack/cli": "^2.1.4",
-    "@rspack/core": "^2.1.4",
-    "@rspack/dev-server": "^2.1.0",
-    "@rspack/plugin-react-refresh": "^2.0.2",
-    "@types/node": "^26.1.1",
-    "@types/react": "^19.0.0",
-    "@types/react-dom": "^19.0.0",
-    "autoprefixer": "^10.4.20",
-    "html-rspack-plugin": "^6.1.9",
-    "postcss": "^8.4.49",
-    "postcss-loader": "^8.1.1",
-    "tailwindcss": "^3.4.17",
-    "typescript": "~5.6.2"
+    "dev": "npm run start -w apps/web",
+    "dev:server": "npm run dev -w apps/server",
+    "build": "npm run build -w apps/web",
+    "typecheck": "npm run typecheck -w apps/web"
   }
 }
