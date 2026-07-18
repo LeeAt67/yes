@@ -8,11 +8,12 @@
 
 AGENTS.md 位置规律：
 ```
-src/components/ComponentName/AGENTS.md
-src/hooks/useHookName/AGENTS.md
-src/utils/utilName/AGENTS.md
-src/service/serviceName/AGENTS.md
-src/controller/stores/storeName/AGENTS.md
+apps/server/src/auth/AGENTS.md
+apps/server/src/chat/AGENTS.md
+apps/server/src/prisma/AGENTS.md
+apps/web/src/controller/stores/AGENTS.md
+packages/shared/src/AGENTS.md
+packages/ui/src/AGENTS.md
 ```
 
 **修改模块逻辑后，若该模块存在 AGENTS.md，必须同步更新文档。**
@@ -36,7 +37,7 @@ Demo 是 React + TypeScript + MobX + Tailwind CSS 的 monorepo 应用。
 demo/
 ├── src/                     ← 前端应用（路由、页面、store、service）
 ├── apps/
-│   └── server/              ← 后端服务（Hono，SSE 流式 API）
+│   └── server/              ← 后端服务（NestJS + Prisma + JWT，SSE 流式 API）
 ├── packages/
 │   ├── shared/              ← 通用工具：cn()、createLogger、tokens
 │   └── ui/                  ← 通用 UI 组件：Button、Sidebar、SidebarNav...

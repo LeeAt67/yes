@@ -37,4 +37,20 @@ export class AuthController {
 
     return this.authService.refresh(parsed.data.refreshToken)
   }
+
+  /**
+   * POST /api/auth/register
+   *
+   * Body: { username, password }
+   * → { id, username, createdAt }
+   */
+  @Post('/register')
+  async register(@Body() rawBody: unknown) {
+    const parsed = loginSchema.safeParse(rawBody)
+    if (!parsed.success) {
+      throw new UnauthorizedException('参数错误')
+    }
+
+    return this.authService.register(parsed.data.username, parsed.data.password)
+  }
 }

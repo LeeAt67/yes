@@ -4,3 +4,5 @@ dist/
 .DS_Store
 react19-mobx-tailwind-scaffold/
 *.env
+*.db
+*.db-journal
