@@ -108,7 +108,7 @@ export default MyComponent
 
 ```tsx
 import XxxIcon from '@/assets/svg/xxx.svg'
-;<XxxIcon className="text-mimo-icon-n1 h-4 w-4" />
+;<XxxIcon className="text- -icon-n1 h-4 w-4" />
 ```
 
 SVG 组件只接受 `className`，不接受 `classNames`。颜色用 `text-*` 控制（需 SVG 内部 `fill="currentColor"`）。

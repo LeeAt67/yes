@@ -78,7 +78,20 @@ export default defineConfig({
         type: 'css',
       },
       {
-        test: /\.(png|jpe?g|gif|svg)$/,
+        test: /\.svg$/,
+        oneOf: [
+          {
+            issuer: { not: /\.[jt]sx?$/ },
+            type: 'asset/resource',
+          },
+          {
+            use: [{ loader: '@svgr/webpack' }],
+            type: 'javascript/auto',
+          },
+        ],
+      },
+      {
+        test: /\.(png|jpe?g|gif)$/,
         type: 'asset/resource',
       },
     ],
