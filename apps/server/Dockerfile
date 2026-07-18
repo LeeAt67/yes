@@ -22,6 +22,6 @@ WORKDIR /app
 COPY --from=builder /app/node_modules /app/node_modules
 COPY --from=builder /app/dist /app/dist
 
-ENV PORT=8001
-EXPOSE 8001
+ENV PORT=3001
+EXPOSE 3001
 CMD ["node", "dist/main.js"]
