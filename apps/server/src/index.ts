@@ -1,6 +1,7 @@
 import { Hono } from 'hono'
 import { cors } from 'hono/cors'
 import { logger } from 'hono/logger'
+import { serve } from '@hono/node-server'
 import { chatRouter } from './routes/chat'
 
 /**
@@ -21,11 +22,7 @@ app.get('/api/health', (c) => c.json({ status: 'ok', timestamp: Date.now() }))
 // 聊天路由
 app.route('/api/chat', chatRouter)
 
-const PORT = Number(process.env.PORT) || 3001
+const PORT = Number(process.env.PORT) || 8001
 
 console.log(`🚀 YES Server running on http://localhost:${PORT}`)
-
-export default {
-  port: PORT,
-  fetch: app.fetch,
-}
+serve({ fetch: app.fetch, port: PORT })
