@@ -17,6 +17,27 @@ model User {
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 
+  messages     ChatMessage[]
+
   @@map("users")
+}
+
+/**
+ * 聊天消息表。
+ * 
+ * 按 userId + conversationId 分组，按 createdAt 排序还原时间线。
+ */
+model ChatMessage {
+  id             Int      @id @default(autoincrement())
+  userId         Int
+  role           String   // "user" | "assistant"
+  content        String
+  conversationId String
+  createdAt      DateTime @default(now())
+
+  user           User     @relation(fields: [userId], references: [id])
+
+  @@index([userId, conversationId])
+  @@map("chat_messages")
 }
 

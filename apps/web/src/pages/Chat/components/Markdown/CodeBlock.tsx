@@ -147,15 +147,16 @@ const CodeBlock = ({ code, language, isTyping = false }: CodeBlockProps) => {
         </div>
       </div>
 
-      {/* 代码主体：grid 叠层，底层占位撑高，上层高亮覆盖 */}
-      <div className="relative rounded-b-lg border border-t-0 border-border">
-        {/* 底层占位 */}
-        <div aria-hidden>{fallbackPre}</div>
-        {/* 上层高亮：可视区进入后才挂载 */}
-        <div className="absolute inset-0">
-          {inView && (
+      {/* 代码主体：grid 叠层，底层占位撑高，上层高亮覆盖。
+          overflow: hidden 裁切底层 PlainLines 超出部分，防止与上层 Shiki 重叠透出 */}  
+      <div className="relative overflow-hidden rounded-b-lg border border-t-0 border-border">
+        {/* 底层占位（仅在高亮未挂载时可见） */}
+        {!inView && <div aria-hidden>{fallbackPre}</div>}
+        {/* 上层高亮：挂载后设 bg-background 覆盖底层 */}
+        <div className="bg-background">
+          {inView ? (
             <ShikiErrorBoundary fallback={fallbackPre}>
-              <Suspense fallback={null}>
+              <Suspense fallback={fallbackPre}>
                 <SafeShikiHighlighter
                   language={language}
                   theme="github-light"
@@ -165,6 +166,8 @@ const CodeBlock = ({ code, language, isTyping = false }: CodeBlockProps) => {
                 </SafeShikiHighlighter>
               </Suspense>
             </ShikiErrorBoundary>
+          ) : (
+            fallbackPre
           )}
         </div>
       </div>

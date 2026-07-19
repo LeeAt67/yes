@@ -195,7 +195,11 @@ const MarkdownCore = memo(
         // rehypeRaw 必须在 rehypeKatex 之前：先解析原始 HTML 生成完整 hast 节点，
         // rehypeKatex 才能正确识别其中的数学公式
         rehypePlugins={[rehypeRaw, rehypeKatex]}
-        components={{ code: codeComponent }}
+        components={{
+          code: codeComponent,
+          // 穿透 react-markdown 自动包裹的 <pre>，避免 CodeBlock 的 <div> 被塞进 <pre> 导致非法嵌套
+          pre: ({ children }) => children,
+        }}
       >
         {content}
       </ReactMarkdown>

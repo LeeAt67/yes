@@ -45,6 +45,14 @@ const ChatPage = forwardRef<HTMLDivElement, ChatPageProps>(
       })
     }, [])
 
+    // 页面挂载时从服务端加载聊天历史
+    useEffect(() => {
+      if (authStore.accessToken) {
+        setApiToken(authStore.accessToken)
+        conversationStore.loadConversation()
+      }
+    }, [authStore.accessToken])
+
     /** 发送消息 — 调用流式 API，token 实时追加到 store */
     const handleSend = useCallback(async () => {
       const query = inputValue.trim()

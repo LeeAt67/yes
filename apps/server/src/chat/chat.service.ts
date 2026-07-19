@@ -214,7 +214,7 @@ export class ChatService {
     // 兜底：吐出残留 + usage + done
     yield* tryFlush()
     if (usageInfo) {
-      yield { type: 'usage', ...usageInfo }
+      yield { type: 'usage', ...usageInfo as Record<string, unknown> }
     }
     yield { type: 'done' }
   }
