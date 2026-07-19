@@ -1,4 +1,4 @@
-import { forwardRef, useCallback } from 'react'
+import { forwardRef, useCallback, type ReactNode } from 'react'
 import { Link, useLocation } from 'react-router-dom'
 import { Home, MessageSquare, Puzzle } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
@@ -22,6 +22,8 @@ export interface SidebarNavProps {
   collapsed?: boolean
   /** 点击链接后回调（移动端关闭菜单等） */
   onNavClick?: () => void
+  /** 子插槽（如会话列表），放在导航项下方 */
+  children?: React.ReactNode
   className?: string
   classNames?: SidebarNavClassNames
 }
@@ -40,7 +42,7 @@ const defaultItems: NavItem[] = [
  * 自动根据当前路由高亮激活项。
  */
 const SidebarNav = forwardRef<HTMLElement, SidebarNavProps>(
-  ({ items = defaultItems, collapsed = false, onNavClick, className, classNames }, ref) => {
+  ({ items = defaultItems, collapsed = false, onNavClick, children, className, classNames }, ref) => {
     const location = useLocation()
 
     /** 点击链接后触发回调 */
@@ -72,6 +74,9 @@ const SidebarNav = forwardRef<HTMLElement, SidebarNavProps>(
             </Link>
           )
         })}
+        {!collapsed && children && (
+          <div className="mt-1">{children}</div>
+        )}
       </nav>
     )
   },

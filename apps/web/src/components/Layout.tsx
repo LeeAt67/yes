@@ -1,10 +1,10 @@
 import { forwardRef } from 'react'
 import { Outlet, useNavigate } from 'react-router-dom'
-import { Menu, LogOut, PanelLeft, Plus } from 'lucide-react'
+import { LogOut, Plus } from 'lucide-react'
 import { cn } from '@yes/shared'
 import { globalStore, authStore, conversationStore } from '@/controller/instances'
 import { observer } from 'mobx-react-lite'
-import { Sidebar } from '@yes/ui'
+import { Sidebar, SidebarToggleIcon } from '@yes/ui'
 import ConversationList from '@/pages/Chat/components/ConversationList'
 
 /** 细粒度 className 定制 */
@@ -51,7 +51,7 @@ const Layout = forwardRef<HTMLDivElement, LayoutProps>(
             isMobile={isMobile}
             onToggle={toggleSidebar}
             onClose={closeSidebar}
-            children={<ConversationList />}
+            navChildren={<ConversationList />}
             footer={
               <button
                 onClick={handleLogout}
@@ -67,15 +67,20 @@ const Layout = forwardRef<HTMLDivElement, LayoutProps>(
 
         {/* 主内容区 */}
         <main className="flex flex-1 flex-col overflow-hidden">
-          {/* Header：展开按钮 + 新建对话 */}
-          <div className="flex h-12 shrink-0 items-center justify-between border-b px-3">
-            <button
-              onClick={toggleSidebar}
-              className="rounded-md p-1.5 text-muted-foreground hover:bg-accent hover:text-foreground transition-colors"
-              title={sidebarCollapsed ? '展开侧栏' : '收起侧栏'}
-            >
-              {isMobile ? <Menu className="h-5 w-5" /> : <PanelLeft className="h-5 w-5" />}
-            </button>
+          {/* Header */}
+          <div className="flex h-12 shrink-0 items-center justify-between px-3">
+            {/* 收展按钮：侧栏展开时由侧栏自己展示，折叠时在主内容区展示 */}
+            {sidebarCollapsed ? (
+              <button
+                onClick={toggleSidebar}
+                className="rounded-md p-1.5 text-muted-foreground hover:bg-accent hover:text-foreground transition-colors"
+                title="展开侧栏"
+              >
+                <SidebarToggleIcon className="h-[1.125rem] w-[1.125rem]" />
+              </button>
+            ) : (
+              <div className="w-9" />
+            )}
             <button
               onClick={() => conversationStore.newConversation()}
               className="rounded-md p-1.5 text-muted-foreground hover:bg-accent hover:text-foreground transition-colors"

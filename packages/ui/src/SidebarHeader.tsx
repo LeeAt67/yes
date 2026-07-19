@@ -45,7 +45,7 @@ const SidebarHeader = forwardRef<HTMLDivElement, SidebarHeaderProps>(
         <div
           ref={ref}
           className={cn(
-            'flex h-14 items-center justify-center border-b',
+            'flex h-14 items-center justify-center',
             classNames?.root,
             className,
           )}
@@ -69,7 +69,7 @@ const SidebarHeader = forwardRef<HTMLDivElement, SidebarHeaderProps>(
       <div
         ref={ref}
         className={cn(
-          'flex h-14 items-center justify-between border-b px-4',
+          'flex h-14 items-center justify-between px-4',
           classNames?.root,
           className,
         )}

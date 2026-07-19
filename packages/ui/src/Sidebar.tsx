@@ -25,6 +25,8 @@ export interface SidebarProps {
   footer?: ReactNode
   /** 侧栏内容区插槽（Header + Nav 下方，Scroll 区） */
   children?: ReactNode
+  /** 导航区域下方插槽（如会话列表，传入 SidebarNav 的 children） */
+  navChildren?: ReactNode
   className?: string
   classNames?: SidebarClassNames
 }
@@ -37,7 +39,7 @@ export interface SidebarProps {
  */
 const Sidebar = forwardRef<HTMLElement, SidebarProps>(
   (
-    { open = true, collapsed = false, isMobile = false, onToggle, onClose, onNavClick, footer, children, className, classNames },
+    { open = true, collapsed = false, isMobile = false, onToggle, onClose, onNavClick, footer, children, navChildren, className, classNames },
     ref,
   ) => {
     /** 侧栏内容展开模式（移动端始终展开，PC 端跟折叠状态走） */
@@ -60,10 +62,11 @@ const Sidebar = forwardRef<HTMLElement, SidebarProps>(
         <SidebarNav
           collapsed={!expanded}
           onNavClick={handleNavClick}
+          children={navChildren}
         />
-        {/* 内容插槽（如会话列表） */}
+        {/* 内容插槽（如会话列表 — 已移至 SidebarNav children） */}
         {!isMobile && expanded && children && (
-          <div className="flex-1 overflow-y-auto border-t px-2 py-2">
+          <div className="flex-1 overflow-y-auto px-2 py-2">
             {children}
           </div>
         )}
