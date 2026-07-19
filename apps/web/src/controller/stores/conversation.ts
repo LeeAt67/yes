@@ -1,15 +1,11 @@
 import { makeAutoObservable, runInAction } from 'mobx'
 import { createLogger } from '@yes/shared'
 import { api } from '@/service/api'
-import type { WebSearchResult } from '@/service/chat'
 
 const logger = createLogger('store:conversation')
 
 /** localStorage key：当前活跃会话 ID */
 const ACTIVE_CONV_KEY = 'chat-active-conversation'
-
-/** localStorage key：联网搜索开关状态 */
-const WEB_SEARCH_KEY = 'chat-web-search'
 
 /** 会话摘要 */
 export interface ConversationSummary {
@@ -54,22 +50,11 @@ class ConversationStore {
   /** 是否已加载 */
   loaded = false
 
-  // ── 联网搜索状态 ──
-
-  /** 是否启用联网搜索 */
-  webSearchEnabled = false
-  /** 当前联网搜索结果列表 */
-  webSearchResults: WebSearchResult[] = []
-  /** 联网搜索是否已完成 */
-  webSearchDone = true
-
   /** 防抖持久化 timer */
   private _saveTimer: ReturnType<typeof setTimeout> | null = null
 
   constructor() {
     makeAutoObservable(this)
-    // 恢复联网搜索开关状态
-    this.webSearchEnabled = localStorage.getItem(WEB_SEARCH_KEY) === 'true'
   }
 
   /** 获取最新一条消息 */
@@ -206,27 +191,6 @@ class ConversationStore {
   clearMessages = () => {
     this.messages = []
     this._persist()
-  }
-
-  // ── 联网搜索 ──
-
-  /**
-   * 切换联网搜索开关状态。
-   */
-  toggleWebSearch = () => {
-    this.webSearchEnabled = !this.webSearchEnabled
-    localStorage.setItem(WEB_SEARCH_KEY, String(this.webSearchEnabled))
-  }
-
-  /**
-   * 更新联网搜索结果，来自 SSE 回调。
-   *
-   * @param results - 搜索结果列表
-   * @param done - 搜索是否已完成
-   */
-  setWebSearchResults = (results: WebSearchResult[], done: boolean) => {
-    this.webSearchResults = results
-    this.webSearchDone = done
   }
 
   // ── 内部 ──

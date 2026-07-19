@@ -30,9 +30,6 @@ export interface ChatInputProps {
   model?: string
   models?: readonly string[]
   onModelSelect?: (model: string) => void
-  // 联网搜索
-  webSearchEnabled?: boolean
-  onWebSearchToggle?: () => void
   // 语音
   onVoiceToggle?: () => void
   recording?: boolean
@@ -54,8 +51,6 @@ const ChatInput: React.FC<ChatInputProps> = ({
   model = 'deepseek-chat',
   models = [],
   onModelSelect = () => {},
-  webSearchEnabled = false,
-  onWebSearchToggle = () => {},
   onVoiceToggle = () => {},
   recording = false,
   onAttach = () => {},
@@ -132,8 +127,6 @@ const ChatInput: React.FC<ChatInputProps> = ({
         model={model}
         models={models}
         onModelSelect={onModelSelect}
-        webSearchEnabled={webSearchEnabled}
-        onWebSearchToggle={onWebSearchToggle}
         recording={recording}
         onVoiceToggle={onVoiceToggle}
         canSend={canSend}

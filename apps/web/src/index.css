@@ -61,4 +61,13 @@
   body {
     @apply bg-background text-foreground;
   }
+
+  /* 全局隐藏滚动条，但保留滚动能力 */
+  * {
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+  }
+  *::-webkit-scrollbar {
+    display: none;
+  }
 }

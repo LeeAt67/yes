@@ -11,7 +11,7 @@ export interface ConversationListProps {
 /**
  * 会话列表 — 显示在侧边栏导航下方，支持切换/删除。
  *
- * 新建对话入口已移至 Header 栏，此处只渲染对话历史列表。
+ * 模仿 mimo-chat SidebarNavSection：头部标题 + 右侧 + 按钮。
  */
 const ConversationList = forwardRef<HTMLDivElement, ConversationListProps>(
   ({ className }, ref) => {
@@ -19,6 +19,7 @@ const ConversationList = forwardRef<HTMLDivElement, ConversationListProps>(
 
     return (
       <div ref={ref} className={cn('space-y-0.5', className)}>
+        {/* 列表 */}
         {list.map(conv => (
           <div key={conv.id} className="group relative">
             <button

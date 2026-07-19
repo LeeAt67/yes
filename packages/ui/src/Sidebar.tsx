@@ -23,8 +23,6 @@ export interface SidebarProps {
   onNavClick?: () => void
   /** 侧栏底部插槽（PC 端显示） */
   footer?: ReactNode
-  /** 侧栏内容区插槽（Header + Nav 下方，Scroll 区） */
-  children?: ReactNode
   /** 导航区域下方插槽（如会话列表，传入 SidebarNav 的 children） */
   navChildren?: ReactNode
   className?: string
@@ -39,7 +37,7 @@ export interface SidebarProps {
  */
 const Sidebar = forwardRef<HTMLElement, SidebarProps>(
   (
-    { open = true, collapsed = false, isMobile = false, onToggle, onClose, onNavClick, footer, children, navChildren, className, classNames },
+    { open = true, collapsed = false, isMobile = false, onToggle, onClose, onNavClick, footer, navChildren, className, classNames },
     ref,
   ) => {
     /** 侧栏内容展开模式（移动端始终展开，PC 端跟折叠状态走） */
@@ -64,12 +62,6 @@ const Sidebar = forwardRef<HTMLElement, SidebarProps>(
           onNavClick={handleNavClick}
           children={navChildren}
         />
-        {/* 内容插槽（如会话列表 — 已移至 SidebarNav children） */}
-        {!isMobile && expanded && children && (
-          <div className="flex-1 overflow-y-auto px-2 py-2">
-            {children}
-          </div>
-        )}
         {/* 底部插槽（仅 PC 展开时显示） */}
         {!isMobile && footer && (
           <div className="border-t p-2">
@@ -110,11 +102,13 @@ const Sidebar = forwardRef<HTMLElement, SidebarProps>(
     }
 
     // PC 端：固定侧栏
+    // width transition + overflow-hidden 防动画期间视觉溢出
     return (
       <aside
         ref={ref}
         className={cn(
-          'flex shrink-0 flex-col border-r bg-muted/30 transition-all duration-200',
+          'flex shrink-0 flex-col border-r bg-muted/30',
+          'transition-[width] duration-300 ease-in-out overflow-hidden',
           collapsed ? 'w-16' : 'w-56',
           classNames?.root,
           className,

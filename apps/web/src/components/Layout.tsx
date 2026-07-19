@@ -27,6 +27,8 @@ const Layout = forwardRef<HTMLDivElement, LayoutProps>(
   ({ className, classNames }, ref) => {
     const navigate = useNavigate()
     const { sidebarCollapsed, toggleSidebar, closeSidebar, isMobile } = globalStore
+    // 模仿 mimo-chat：有消息 → 显示 header 下边框，空 → 透明无缝
+    const hasMessages = conversationStore.messages.length > 0
 
     /** 退出登录 */
     const handleLogout = () => {
@@ -68,26 +70,31 @@ const Layout = forwardRef<HTMLDivElement, LayoutProps>(
         {/* 主内容区 */}
         <main className="flex flex-1 flex-col overflow-hidden">
           {/* Header */}
-          <div className="flex h-12 shrink-0 items-center justify-between px-3">
-            {/* 收展按钮：侧栏展开时由侧栏自己展示，折叠时在主内容区展示 */}
-            {sidebarCollapsed ? (
+          <div className={cn(
+            'flex h-12 shrink-0 items-center justify-between px-3 transition-colors',
+            hasMessages && 'border-b',
+          )}>
+            {/* 左侧：收展 + 新建对话 */}
+            <div className="flex items-center gap-1">
+              {sidebarCollapsed && (
+                <button
+                  onClick={toggleSidebar}
+                  className="rounded-md p-1.5 text-muted-foreground hover:bg-accent hover:text-foreground transition-colors"
+                  title="展开侧栏"
+                >
+                  <SidebarToggleIcon className="h-[1.125rem] w-[1.125rem]" />
+                </button>
+              )}
               <button
-                onClick={toggleSidebar}
+                onClick={() => conversationStore.newConversation()}
                 className="rounded-md p-1.5 text-muted-foreground hover:bg-accent hover:text-foreground transition-colors"
-                title="展开侧栏"
+                title="新建对话"
               >
-                <SidebarToggleIcon className="h-[1.125rem] w-[1.125rem]" />
+                <Plus className="h-5 w-5" />
               </button>
-            ) : (
-              <div className="w-9" />
-            )}
-            <button
-              onClick={() => conversationStore.newConversation()}
-              className="rounded-md p-1.5 text-muted-foreground hover:bg-accent hover:text-foreground transition-colors"
-              title="新建对话"
-            >
-              <Plus className="h-5 w-5" />
-            </button>
+            </div>
+            {/* 右侧占位（保持 justify-between） */}
+            <div />
           </div>
           <div className="flex-1 overflow-y-auto">
             <Outlet />

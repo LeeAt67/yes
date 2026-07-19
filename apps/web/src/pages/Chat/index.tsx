@@ -40,7 +40,7 @@ const ChatPage = forwardRef<HTMLDivElement, ChatPageProps>(
     const [model, setModel] = useState('deepseek-v4-pro')
     const [models, setModels] = useState<string[]>(DEFAULT_MODELS)
     const [searchPanelOpen, setSearchPanelOpen] = useState(false)
-    const { messages, streaming, activeId, webSearchEnabled } = conversationStore
+    const { messages, streaming, activeId } = conversationStore
     const abortRef = useRef<AbortController | null>(null)
 
     // 从 toolStore 聚合所有已完成的搜索调用，去重（按 URL）后用于浮动面板
@@ -88,7 +88,7 @@ const ChatPage = forwardRef<HTMLDivElement, ChatPageProps>(
       const query = inputValue.trim()
       if (!query || streaming || !activeId) return
 
-      logger.info('Sending:', { query, model, webSearchEnabled })
+      logger.info('Sending:', { query, model })
 
       // 持久化草稿：防止发送途中 401 导致输入内容丢失
       localStorage.setItem(DRAFT_KEY, inputValue)
@@ -122,7 +122,7 @@ const ChatPage = forwardRef<HTMLDivElement, ChatPageProps>(
         conversationId: activeId!,
         modelConfig: {
           model,
-          webSearchStatus: webSearchEnabled ? 'enabled' : 'disabled',
+          webSearchStatus: 'enabled',
         },
         signal: controller.signal,
         onToolCall: (name, args) => {
@@ -162,7 +162,7 @@ const ChatPage = forwardRef<HTMLDivElement, ChatPageProps>(
         conversationStore.removeLastMessages(2)
         setInputValue(query)
       }
-    }, [inputValue, streaming, model, activeId, webSearchEnabled])
+    }, [inputValue, streaming, model, activeId])
 
     /** 停止生成 — 中断当前流式请求 */
     const handleStop = useCallback(() => {
@@ -288,8 +288,6 @@ const ChatPage = forwardRef<HTMLDivElement, ChatPageProps>(
               model={model}
               models={models}
               onModelSelect={setModel}
-              webSearchEnabled={webSearchEnabled}
-              onWebSearchToggle={() => conversationStore.toggleWebSearch()}
             />
           </div>
         </div>
