@@ -43,25 +43,27 @@ const Layout = forwardRef<HTMLDivElement, LayoutProps>(
           className,
         )}
       >
-        {/* 侧边栏（导航 + 会话列表 + 退出按钮） */}
-        <Sidebar
-          open={!sidebarCollapsed}
-          collapsed={sidebarCollapsed}
-          isMobile={isMobile}
-          onToggle={toggleSidebar}
-          onClose={closeSidebar}
-          children={<ConversationList />}
-          footer={
-            <button
-              onClick={handleLogout}
-              className="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm text-muted-foreground hover:text-foreground hover:bg-accent/50 transition-colors"
-              title="退出登录"
-            >
-              <LogOut className="h-4 w-4 shrink-0" />
-              <span>退出登录</span>
-            </button>
-          }
-        />
+        {/* 侧边栏：PC 收起时不渲染，移动端始终以覆盖层模式存在 */}  
+        {(isMobile || !sidebarCollapsed) && (
+          <Sidebar
+            open={isMobile || !sidebarCollapsed}
+            collapsed={!isMobile && sidebarCollapsed}
+            isMobile={isMobile}
+            onToggle={toggleSidebar}
+            onClose={closeSidebar}
+            children={<ConversationList />}
+            footer={
+              <button
+                onClick={handleLogout}
+                className="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm text-muted-foreground hover:text-foreground hover:bg-accent/50 transition-colors"
+                title="退出登录"
+              >
+                <LogOut className="h-4 w-4 shrink-0" />
+                <span>退出登录</span>
+              </button>
+            }
+          />
+        )}
 
         {/* 主内容区 */}
         <main className="flex flex-1 flex-col overflow-hidden">
@@ -72,13 +74,7 @@ const Layout = forwardRef<HTMLDivElement, LayoutProps>(
               className="rounded-md p-1.5 text-muted-foreground hover:bg-accent hover:text-foreground transition-colors"
               title={sidebarCollapsed ? '展开侧栏' : '收起侧栏'}
             >
-              {sidebarCollapsed ? (
-                <PanelLeft className="h-5 w-5" />
-              ) : isMobile ? (
-                <Menu className="h-5 w-5" />
-              ) : (
-                <PanelLeft className="h-5 w-5" />
-              )}
+              {isMobile ? <Menu className="h-5 w-5" /> : <PanelLeft className="h-5 w-5" />}
             </button>
             <button
               onClick={() => conversationStore.newConversation()}
