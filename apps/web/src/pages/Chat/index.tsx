@@ -8,9 +8,11 @@ import Welcome from './components/Welcome'
 import Markdown from './components/Markdown'
 import SearchResultPanel from './components/SearchResultPanel'
 import ToolRenderer from '@/components/ToolRenderer'
+import MediaPreviewList from './components/MediaPreviewList'
 import { streamChatMessage, type WebSearchResult } from '@/service/chat'
 import { setApiToken, api } from '@/service/api'
-import { conversationStore, authStore, toolStore } from '@/controller/instances'
+import { conversationStore, authStore, toolStore, mediaStore } from '@/controller/instances'
+import { uploadFile, validateFile, validateCount } from '@/service/tools/upload'
 
 const logger = createLogger('chat:page')
 
@@ -42,6 +44,7 @@ const ChatPage = forwardRef<HTMLDivElement, ChatPageProps>(
     const [searchPanelOpen, setSearchPanelOpen] = useState(false)
     const { messages, streaming, activeId } = conversationStore
     const abortRef = useRef<AbortController | null>(null)
+    const fileInputRef = useRef<HTMLInputElement>(null)
 
     // 从 toolStore 聚合所有已完成的搜索调用，去重（按 URL）后用于浮动面板
     const webSearchResults: WebSearchResult[] = React.useMemo(() => {
@@ -83,40 +86,50 @@ const ChatPage = forwardRef<HTMLDivElement, ChatPageProps>(
       }
     }, [authStore.accessToken])
 
-    /** 发送消息 — 调用流式 API，token 实时追加到 store */
+    /** 发送消息 */
     const handleSend = useCallback(async () => {
       const query = inputValue.trim()
       if (!query || streaming || !activeId) return
 
-      logger.info('Sending:', { query, model })
+      // 检查是否有未完成的上传
+      if (mediaStore.hasProcessing) return
 
-      // 持久化草稿：防止发送途中 401 导致输入内容丢失
+      logger.info('Sending:', { query, model, attachments: mediaStore.items.length })
+
+      // 持久化草稿
       localStorage.setItem(DRAFT_KEY, inputValue)
       setInputValue('')
+
+      // 快照当前附件（发送完清理）
+      const currentMedias = mediaStore.toSendable()
+      mediaStore.reset()
 
       // 同步 auth token
       setApiToken(authStore.accessToken)
 
-      // 创建 AbortController，用于取消
+      // 创建 AbortController
       const controller = new AbortController()
       abortRef.current = controller
 
       // 重置工具调用
       toolStore.reset()
 
-      // 提取当前对话历史（不含即将发送的用户消息和 AI 占位）
+      // 提取当前对话历史
       const history = conversationStore.messages.map(m => ({
         role: m.role as 'user' | 'assistant',
         content: m.content,
       }))
 
-      // 用户消息先入 store
-      conversationStore.addMessage({ role: 'user', content: query })
-      // AI 占位消息（流式追加）
+      // 用户消息先入 store（展示时带附件指示）
+      const userDisplay = currentMedias.length > 0
+        ? `${currentMedias.map(a => a.name).join(', ')} ${query}`
+        : query
+      conversationStore.addMessage({ role: 'user', content: userDisplay })
+      // AI 占位消息
       conversationStore.addMessage({ role: 'assistant', content: '' })
       runInAction(() => { conversationStore.streaming = true })
 
-      const messages = await streamChatMessage(query, (token) => {
+      const resultMessages = await streamChatMessage(query, (token) => {
         conversationStore.appendToken(token)
       }, {
         conversationId: activeId!,
@@ -125,6 +138,7 @@ const ChatPage = forwardRef<HTMLDivElement, ChatPageProps>(
           webSearchStatus: 'enabled',
         },
         signal: controller.signal,
+        multiMedias: currentMedias,
         onToolCall: (name, args) => {
           runInAction(() => { toolStore.addCall(name, args) })
         },
@@ -154,7 +168,7 @@ const ChatPage = forwardRef<HTMLDivElement, ChatPageProps>(
       runInAction(() => { conversationStore.streaming = false })
 
       // 发送成功 → 清除草稿
-      if (messages.length > 0) {
+      if (resultMessages.length > 0) {
         localStorage.removeItem(DRAFT_KEY)
       } else {
         // 发送失败（通常是 401）：回滚已添加的消息 + 恢复输入框
@@ -170,6 +184,61 @@ const ChatPage = forwardRef<HTMLDivElement, ChatPageProps>(
         abortRef.current.abort()
         abortRef.current = null
       }
+    }, [])
+
+    /** 选择文件 → 上传管线 */
+    const handleAttach = useCallback(() => {
+      fileInputRef.current?.click()
+    }, [])
+
+    /** 文件选择后：创建条目 → 压缩 → 上传 */
+    const handleFileChange = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
+      const files = e.target.files
+      if (!files || files.length === 0) return
+
+      const fileList = Array.from(files)
+
+      // 数量校验
+      const countErr = validateCount(mediaStore.items.length, fileList.length)
+      if (countErr) { logger.warn(countErr.message); return }
+
+      for (const file of fileList) {
+        // 文件校验
+        const err = validateFile(file)
+        if (err) {
+          logger.warn(`文件校验失败: ${file.name} — ${err.message}`)
+          continue
+        }
+
+        const isImage = file.type.startsWith('image/')
+        const id = crypto.randomUUID()
+        const objectUrl = URL.createObjectURL(file)
+
+        // ① 创建条目（pending 状态）
+        mediaStore.addItem({
+          id,
+          mediaType: isImage ? 'image' : 'file',
+          objectUrl,
+          url: '',
+          name: file.name,
+          size: file.size,
+        })
+
+        // ② 上传（校验 + 压缩 + 分片 + 秒传 + 重试）
+        uploadFile(
+          file,
+          (pct) => mediaStore.updateItem(id, { uploadProgress: pct }),
+          (status) => mediaStore.updateItem(id, { status }),
+        ).then((result) => {
+          if (result) {
+            mediaStore.updateItem(id, { url: result.url })
+          } else {
+            mediaStore.updateItem(id, { errorMessage: '上传失败' })
+          }
+        })
+      }
+
+      if (fileInputRef.current) fileInputRef.current.value = ''
     }, [])
 
     return (
@@ -278,6 +347,11 @@ const ChatPage = forwardRef<HTMLDivElement, ChatPageProps>(
           )}
         >
           <div className={cn('mx-auto max-w-xl', classNames?.input)}>
+            {/* 附件预览（MediaPreviewList 驱动） */}
+            <MediaPreviewList
+              items={mediaStore.items}
+              onRemove={(id) => mediaStore.removeItem(id)}
+            />
             <ChatInput
               value={inputValue}
               onValueChange={setInputValue}
@@ -288,6 +362,16 @@ const ChatPage = forwardRef<HTMLDivElement, ChatPageProps>(
               model={model}
               models={models}
               onModelSelect={setModel}
+              onAttach={handleAttach}
+            />
+            {/* 隐藏文件输入 */}
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*,.pdf,.doc,.docx,.txt"
+              multiple
+              className="hidden"
+              onChange={handleFileChange}
             />
           </div>
         </div>

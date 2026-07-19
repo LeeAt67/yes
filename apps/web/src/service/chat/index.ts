@@ -48,6 +48,14 @@ export interface ModelConfig {
   temperature?: number
 }
 
+/** 多模态附件 */
+export interface MultiMedia {
+  mediaType: 'image' | 'file'
+  url: string
+  name: string
+  size: number
+}
+
 /** 流式请求可选参数 */
 export interface ChatStreamOptions {
   conversationId: string

@@ -28,6 +28,16 @@ export const historyMessageSchema = z.object({
 
 export type HistoryMessage = z.infer<typeof historyMessageSchema>
 
+/** 多模态附件输入 */
+export const multiMediaSchema = z.object({
+  mediaType: z.enum(['image', 'file', 'video', 'audio']),
+  url: z.string().optional(),
+  name: z.string().optional(),
+  size: z.number().optional(),
+})
+
+export type MultiMediaInput = z.infer<typeof multiMediaSchema>
+
 export const chatRequestSchema = z.object({
   msgId: z.string(),
   conversationId: z.string(),
@@ -35,7 +45,7 @@ export const chatRequestSchema = z.object({
   isEditedQuery: z.boolean().optional().default(false),
   system: z.string().optional(),
   modelConfig: modelConfigSchema.optional(),
-  multiMedias: z.array(z.any()).optional().default([]),
+  multiMedias: z.array(multiMediaSchema).optional().default([]),
   history: z.array(historyMessageSchema).optional().default([]),
 })
 
@@ -293,13 +303,16 @@ export class ChatService {
    * - `{ type: 'done' }` — 结束
    */
   async *streamChat(body: ChatRequest): AsyncGenerator<Record<string, unknown>> {
-    const { query, system, modelConfig: rawMc, history } = body
+    const { query, system, modelConfig: rawMc, history, multiMedias } = body
     const mc = { ...DEFAULT_MODEL_CONFIG, ...rawMc }
 
     // 拼接系统提示词（不含搜索结果，搜索由 LLM tool_call 驱动）
     const mergedSystem = system
       ? `${MD_FORMAT_SYSTEM_PROMPT}\n\n---\n\n${system}`
       : MD_FORMAT_SYSTEM_PROMPT
+
+    // 构建当前用户消息的多模态 content
+    const userContent = buildMultimodalContent(query, multiMedias ?? [])
 
     // ── 构建初始 messages（compact + 截断） ──
     const buildMessages = async (extraMessages: Array<Record<string, unknown>> = []): Promise<Array<Record<string, unknown>>> => {
@@ -335,9 +348,11 @@ export class ChatService {
       if (compactSummary) {
         msgs.push({ role: 'system', content: `[更早的对话摘要]\n${compactSummary}` })
       }
+      // 历史消息仅传文本（不含 base64 图片数据，体积太大）
       for (const h of truncated) msgs.push({ role: h.role, content: h.content })
       for (const m of extraMessages) msgs.push(m)
-      msgs.push({ role: 'user', content: query })
+      // 当前用户消息使用多模态格式
+      msgs.push({ role: 'user', content: userContent })
 
       return msgs
     }
@@ -540,4 +555,36 @@ export class ChatService {
     // 超过最大轮数兜底
     yield { type: 'error', content: '工具调用超过最大轮数' }
   }
+}
+
+/**
+ * 构建多模态用户消息的 content 字段。
+ *
+ * 无图片/文件时返回纯文本字符串；有图片时返回 OpenAI multimodal 数组：
+ * `[{ type: 'text', text }, { type: 'image_url', image_url: { url: 'data:...' } }, ...]`
+ *
+ * 支持的图片格式：data:image/* base64 或 http(s) URL。
+ *
+ * @param text - 用户文本
+ * @param medias - 附件列表
+ * @returns 文本字符串或多模态内容数组
+ */
+const buildMultimodalContent = (
+  text: string,
+  medias: Array<{ mediaType: string; url?: string; name?: string }>,
+): string | Array<Record<string, unknown>> => {
+  const images = medias.filter(
+    (m) => m.mediaType === 'image' && m.url && /^(data:image\/|https?:\/\/)/i.test(m.url),
+  )
+
+  if (images.length === 0) return text
+
+  const parts: Array<Record<string, unknown>> = [{ type: 'text', text }]
+  for (const img of images) {
+    parts.push({
+      type: 'image_url',
+      image_url: { url: img.url },
+    })
+  }
+  return parts
 }

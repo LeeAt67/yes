@@ -34,6 +34,7 @@ export interface ChatInputProps {
   onVoiceToggle?: () => void
   recording?: boolean
   // 附件
+  /** 附件上传 */
   onAttach?: () => void
   // 设置
   onSettings?: () => void
@@ -73,20 +74,8 @@ const ChatInput: React.FC<ChatInputProps> = ({
 
   const canSend = value.trim().length > 0
 
-  /** 附件上传 �?触发文件选择 */
+  /** 附件上传 — 委托给父组件 */
   const handleAttach = () => {
-    // TODO: 接入实际文件上传逻辑（创建隐�?input[type=file]，支持图�?文档�?
-    const input = document.createElement('input')
-    input.type = 'file'
-    input.accept = 'image/*,.pdf,.doc,.docx'
-    input.onchange = (e) => {
-      const file = (e.target as HTMLInputElement).files?.[0]
-      if (file) {
-        logger.debug('附件已选择:', file.name)
-        // TODO: 上传文件并回�?onAttach
-      }
-    }
-    input.click()
     onAttach()
   }
 

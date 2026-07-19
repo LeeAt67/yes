@@ -27,7 +27,7 @@ const Layout = forwardRef<HTMLDivElement, LayoutProps>(
   ({ className, classNames }, ref) => {
     const navigate = useNavigate()
     const { sidebarCollapsed, toggleSidebar, closeSidebar, isMobile } = globalStore
-    // 模仿 mimo-chat：有消息 → 显示 header 下边框，空 → 透明无缝
+    //      ：有消息 → 显示 header 下边框，空 → 透明无缝
     const hasMessages = conversationStore.messages.length > 0
 
     /** 退出登录 */

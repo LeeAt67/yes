@@ -1,7 +1,7 @@
 /**
  * 工具显示配置注册表 — 控制每个工具在 UI 中的展示方式。
  *
- * 模仿   的 TOOL_CONFIGS 模式：
+ *       的 TOOL_CONFIGS 模式：
  *   getToolConfig(name) → ToolDisplayConfig
  *   未匹配时返回 Default 配置。
  */

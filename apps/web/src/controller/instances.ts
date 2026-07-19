@@ -14,6 +14,7 @@ import StorageStore from './stores/storage'
 import VoiceStore from './stores/voice'
 import AuthStore from './stores/auth'
 import ToolStore from './stores/tool'
+import MediaStore from './stores/media'
 
 /** 本地存储管理实例 */
 export const localStorageStore = new StorageStore()
@@ -29,6 +30,9 @@ export const conversationStore = new ConversationStore()
 
 /** 工具调用状态管理实例 */
 export const toolStore = new ToolStore()
+
+/** 媒体上传状态管理实例（       MediaUploader） */
+export const mediaStore = new MediaStore()
 
 /** Claw 独立状态管理实例 */
 export const clawStore = new ClawStore()

@@ -11,7 +11,7 @@ export interface ConversationListProps {
 /**
  * 会话列表 — 显示在侧边栏导航下方，支持切换/删除。
  *
- * 模仿 mimo-chat SidebarNavSection：头部标题 + 右侧 + 按钮。
+ *       SidebarNavSection：头部标题 + 右侧 + 按钮。
  */
 const ConversationList = forwardRef<HTMLDivElement, ConversationListProps>(
   ({ className }, ref) => {
