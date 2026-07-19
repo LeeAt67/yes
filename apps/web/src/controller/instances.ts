@@ -15,6 +15,7 @@ import VoiceStore from './stores/voice'
 import AuthStore from './stores/auth'
 import ToolStore from './stores/tool'
 import MediaStore from './stores/media'
+import LiveKitStore from './stores/livekit'
 
 /** 本地存储管理实例 */
 export const localStorageStore = new StorageStore()
@@ -40,5 +41,8 @@ export const clawStore = new ClawStore()
 /** 分享状态管理实例 */
 export const shareStore = new ShareStore()
 
-/** 语音状态管理实例 */
+/** 语音状态管理实例（ASR 语音转文字预留） */
 export const voiceStore = new VoiceStore()
+
+/** LiveKit 语音/视频通话状态管理实例 */
+export const livekitStore = new LiveKitStore()

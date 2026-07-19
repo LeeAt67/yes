@@ -13,6 +13,7 @@ import HomePage from '@/pages/Home'
 import LoginPage from '@/pages/Login'
 import RegisterPage from '@/pages/Register'
 import ComponentPreviewPage from '@/pages/ComponentPreview'
+import CallPage from '@/pages/Call'
 import Layout from '@/components/Layout'
 import AuthGuard from '@/components/AuthGuard'
 
@@ -29,6 +30,8 @@ const routes: RouteObject[] = [
           { path: 'components', element: <ComponentPreviewPage /> },
         ],
       },
+      // 全屏通话页（不使用 Layout）
+      { path: 'call', element: <CallPage /> },
       // AuthGuard 内的兜底：已登录 → 重定向首页
       { path: '*', element: <Navigate to="/" replace /> },
     ],

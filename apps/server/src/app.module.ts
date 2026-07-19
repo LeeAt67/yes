@@ -4,12 +4,13 @@ import { ChatModule } from './chat/chat.module'
 import { ChatHistoryModule } from './chat-history/chat-history.module'
 import { SandboxModule } from './sandbox/sandbox.module'
 import { UploadModule } from './upload/upload.module'
+import { LiveKitModule } from './livekit/livekit.module'
 import { PrismaModule } from './prisma/prisma.module'
 import { HealthController } from './health.controller'
 import { ModelsController } from './models.controller'
 
 @Module({
-  imports: [PrismaModule, AuthModule, ChatModule, ChatHistoryModule, SandboxModule, UploadModule],
+  imports: [PrismaModule, AuthModule, ChatModule, ChatHistoryModule, SandboxModule, UploadModule, LiveKitModule],
   controllers: [HealthController, ModelsController],
 })
 export class AppModule {}

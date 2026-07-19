@@ -1,0 +1,22 @@
+# LiveKit Server 配置文件
+# 文档：https://docs.livekit.io/home/self-hosting/deployment/
+
+port: 7880
+
+# WebRTC 信令 + 媒体端口范围
+rtc:
+  port_range_start: 50000
+  port_range_end: 60000
+  # 开发环境不使用 TURN，直接 STUN
+  use_external_ip: false
+  # 生产环境需替换为公网 IP
+  # use_external_ip: true
+  # tcp_port: 7881
+
+# API 密钥（用于后端 SDK 签发 Token）
+keys:
+  devkey: secretsecretsecretsecret12
+
+# 日志级别
+logging:
+  level: info

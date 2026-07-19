@@ -6,6 +6,7 @@ import { globalStore, authStore, conversationStore } from '@/controller/instance
 import { observer } from 'mobx-react-lite'
 import { Sidebar, SidebarToggleIcon } from '@yes/ui'
 import ConversationList from '@/pages/Chat/components/ConversationList'
+import PhoneCallButton from '@/components/PhoneCallButton'
 
 /** 细粒度 className 定制 */
 interface LayoutClassNames {
@@ -93,8 +94,10 @@ const Layout = forwardRef<HTMLDivElement, LayoutProps>(
                 <Plus className="h-5 w-5" />
               </button>
             </div>
-            {/* 右侧占位（保持 justify-between） */}
-            <div />
+            {/* 右侧：电话按钮 */}
+            <div>
+              <PhoneCallButton />
+            </div>
           </div>
           <div className="flex-1 overflow-y-auto">
             <Outlet />
