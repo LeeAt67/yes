@@ -5,6 +5,7 @@ import { cn } from '@yes/shared'
 import { globalStore, authStore } from '@/controller/instances'
 import { observer } from 'mobx-react-lite'
 import { Sidebar } from '@yes/ui'
+import ConversationList from '@/pages/Chat/components/ConversationList'
 
 /** 细粒度 className 定制 */
 interface LayoutClassNames {
@@ -60,6 +61,15 @@ const Layout = forwardRef<HTMLDivElement, LayoutProps>(
             </button>
           }
         />
+
+        {/* 会话列表面板 */}
+        {!isMobile && !sidebarCollapsed && (
+          <aside className="flex w-56 shrink-0 flex-col border-r bg-card">
+            <div className="flex-1 overflow-y-auto p-2">
+              <ConversationList />
+            </div>
+          </aside>
+        )}
 
         {/* 主内容区 */}
         <main className="flex flex-1 flex-col overflow-hidden">

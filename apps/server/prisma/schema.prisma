@@ -18,14 +18,33 @@ model User {
   updatedAt    DateTime @updatedAt
 
   messages     ChatMessage[]
+  conversations Conversation[]
 
   @@map("users")
 }
 
 /**
+ * 会话表。
+ *
+ * 每个用户可创建多个会话，按 updatedAt 排序。
+ */
+model Conversation {
+  id        String   @id        // UUID
+  userId    Int
+  title     String               // 会话标题（取自第一条用户消息）
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user      User     @relation(fields: [userId], references: [id])
+
+  @@index([userId, updatedAt])
+  @@map("conversations")
+}
+
+/**
  * 聊天消息表。
  * 
- * 按 userId + conversationId 分组，按 createdAt 排序还原时间线。
+ * 按 conversationId 分组，按 createdAt 排序还原时间线。
  */
 model ChatMessage {
   id             Int      @id @default(autoincrement())

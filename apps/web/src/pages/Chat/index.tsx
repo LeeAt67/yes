@@ -35,7 +35,7 @@ const ChatPage = forwardRef<HTMLDivElement, ChatPageProps>(
     const [inputValue, setInputValue] = useState(() => localStorage.getItem(DRAFT_KEY) ?? '')
     const [model, setModel] = useState('deepseek-v4-pro')
     const [models, setModels] = useState<string[]>(DEFAULT_MODELS)
-    const { messages, streaming, conversationId } = conversationStore
+    const { messages, streaming, activeId } = conversationStore
     const abortRef = useRef<AbortController | null>(null)
 
     // 从后端拉取模型列表
@@ -45,18 +45,18 @@ const ChatPage = forwardRef<HTMLDivElement, ChatPageProps>(
       })
     }, [])
 
-    // 页面挂载时从服务端加载聊天历史
+    // 页面挂载时从服务端加载会话列表
     useEffect(() => {
       if (authStore.accessToken) {
         setApiToken(authStore.accessToken)
-        conversationStore.loadConversation()
+        conversationStore.loadConversationList()
       }
     }, [authStore.accessToken])
 
     /** 发送消息 — 调用流式 API，token 实时追加到 store */
     const handleSend = useCallback(async () => {
       const query = inputValue.trim()
-      if (!query || streaming) return
+      if (!query || streaming || !activeId) return
 
       logger.info('Sending:', { query, model })
 
@@ -80,7 +80,7 @@ const ChatPage = forwardRef<HTMLDivElement, ChatPageProps>(
       const messages = await streamChatMessage(query, (token) => {
         conversationStore.appendToken(token)
       }, {
-        conversationId,
+        conversationId: activeId!,
         modelConfig: { model },
         signal: controller.signal,
       })
@@ -98,7 +98,7 @@ const ChatPage = forwardRef<HTMLDivElement, ChatPageProps>(
         conversationStore.removeLastMessages(2)
         setInputValue(query)
       }
-    }, [inputValue, streaming, model, conversationId])
+    }, [inputValue, streaming, model, activeId])
 
     /** 停止生成 — 中断当前流式请求 */
     const handleStop = useCallback(() => {

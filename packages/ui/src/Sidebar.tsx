@@ -23,6 +23,8 @@ export interface SidebarProps {
   onNavClick?: () => void
   /** 侧栏底部插槽（PC 端显示） */
   footer?: ReactNode
+  /** 侧栏内容区插槽（Header + Nav 下方，Scroll 区） */
+  children?: ReactNode
   className?: string
   classNames?: SidebarClassNames
 }
@@ -35,7 +37,7 @@ export interface SidebarProps {
  */
 const Sidebar = forwardRef<HTMLElement, SidebarProps>(
   (
-    { open = true, collapsed = false, isMobile = false, onToggle, onClose, onNavClick, footer, className, classNames },
+    { open = true, collapsed = false, isMobile = false, onToggle, onClose, onNavClick, footer, children, className, classNames },
     ref,
   ) => {
     /** 侧栏内容展开模式（移动端始终展开，PC 端跟折叠状态走） */
@@ -59,6 +61,12 @@ const Sidebar = forwardRef<HTMLElement, SidebarProps>(
           collapsed={!expanded}
           onNavClick={handleNavClick}
         />
+        {/* 内容插槽（如会话列表） */}
+        {!isMobile && expanded && children && (
+          <div className="flex-1 overflow-y-auto border-t px-2 py-2">
+            {children}
+          </div>
+        )}
         {/* 底部插槽（仅 PC 展开时显示） */}
         {!isMobile && footer && (
           <div className="border-t p-2">
