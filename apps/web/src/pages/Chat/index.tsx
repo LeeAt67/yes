@@ -1,13 +1,14 @@
-import { forwardRef, useState, useEffect, useRef, useCallback } from 'react'
+import React, { forwardRef, useState, useEffect, useRef, useCallback } from 'react'
 import { runInAction } from 'mobx'
 import { cn, createLogger } from '@yes/shared'
 import { observer } from 'mobx-react-lite'
+import { Search, ChevronRight } from 'lucide-react'
 import { ChatInput } from './components/ChatInput'
 import Welcome from './components/Welcome'
 import Markdown from './components/Markdown'
 import SearchResultPanel from './components/SearchResultPanel'
 import ToolRenderer from '@/components/ToolRenderer'
-import { streamChatMessage } from '@/service/chat'
+import { streamChatMessage, type WebSearchResult } from '@/service/chat'
 import { setApiToken, api } from '@/service/api'
 import { conversationStore, authStore, toolStore } from '@/controller/instances'
 
@@ -42,17 +43,30 @@ const ChatPage = forwardRef<HTMLDivElement, ChatPageProps>(
     const { messages, streaming, activeId, webSearchEnabled } = conversationStore
     const abortRef = useRef<AbortController | null>(null)
 
-    // 从 toolStore 提取搜索结果（给 SearchResultPanel 用）
-    const webSearchResults = (() => {
-      const call = toolStore.calls.find(c => c.toolName === 'web_search' && c.status === 'completed')
-      if (!call?.result?.data) return []
-      const d = call.result.data
-      if (Array.isArray(d)) return d
-      if (typeof d === 'string') {
-        try { return JSON.parse(d) } catch { return [] }
+    // 从 toolStore 聚合所有已完成的搜索调用，去重（按 URL）后用于浮动面板
+    const webSearchResults: WebSearchResult[] = React.useMemo(() => {
+      const seen = new Set<string>()
+      const all: WebSearchResult[] = []
+      for (const call of toolStore.calls) {
+        if (call.toolName !== 'web_search' || call.status !== 'completed') continue
+        let items: unknown[] = []
+        const d = call.result?.data
+        if (Array.isArray(d)) items = d
+        else if (typeof d === 'string') {
+          try { items = JSON.parse(d) } catch { /* skip */ }
+        }
+        for (const item of items) {
+          const r = item as WebSearchResult
+          if (r.url && seen.has(r.url)) continue
+          if (r.url) seen.add(r.url)
+          all.push(r)
+        }
       }
-      return []
-    })()
+      return all
+    }, [toolStore.calls])
+
+    // 本轮是否发起过任何工具调用（避免 tool_call 间隙闪现"思考中…"）
+    const hasToolActivity = toolStore.calls.length > 0
 
     // 从后端拉取模型列表
     useEffect(() => {
@@ -169,46 +183,86 @@ const ChatPage = forwardRef<HTMLDivElement, ChatPageProps>(
       >
         {/* 消息列表（有消息时滚动显示） */}
         {messages.length > 0 ? (
-          <div className="flex-1 overflow-y-auto px-4 py-6">
-            {/* 工具调用列表（ToolRenderer 驱动，由 LLM tool_call 事件触发） */}
-            {toolStore.calls.map((call, i) => (
-              <ToolRenderer
-                key={`${call.toolName}-${call.startedAt}`}
-                state={call}
-                onOpenSearch={() => setSearchPanelOpen(true)}
-                className="mb-2"
-              />
-            ))}
-
+          <div className="relative flex-1 overflow-y-auto px-4 py-6">
             <div className="mx-auto max-w-2xl space-y-6">
-              {messages.map((msg) => (
-                <div
-                  key={msg.id}
-                  className={cn(
-                    'flex',
-                    msg.role === 'user' ? 'justify-end' : 'justify-start',
-                  )}
-                >
-                  {msg.role === 'user' ? (
-                    <div className="max-w-[80%] rounded-xl bg-primary px-4 py-3 text-sm leading-6 text-primary-foreground">
-                      {msg.content}
-                    </div>
-                  ) : (
-                    <div className="max-w-[80%] rounded-xl bg-muted px-4 py-3 text-sm leading-6 text-foreground">
-                      {msg.content ? (
-                        <Markdown
-                          content={msg.content}
-                          isTyping={streaming && msg.role === 'assistant'}
-                          blockMode
-                        />
-                      ) : streaming ? (
-                        <span className="italic text-muted-foreground">思考中…</span>
-                      ) : null}
-                    </div>
-                  )}
-                </div>
-              ))}
+              {messages.map((msg, i) => {
+                const isLast = i === messages.length - 1
+                const isAssistant = msg.role === 'assistant'
+
+                // 该条 AI 消息对应的已完成搜索调用（同一轮中）
+                const hasSearchResults = isLast && webSearchResults.length > 0
+
+                return (
+                  <div
+                    key={msg.id}
+                    className="flex flex-col gap-1.5"
+                  >
+                    {/* 用户消息 */}
+                    {msg.role === 'user' && (
+                      <div className="flex justify-end">
+                        <div className="max-w-[80%] rounded-xl bg-primary px-4 py-3 text-sm leading-6 text-primary-foreground">
+                          {msg.content}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* 工具调用动态效果：替换"思考中…"，保持在助手消息上方 */}
+                    {isLast && isAssistant && hasToolActivity && !msg.content && (
+                      <div className="flex justify-start">
+                        <div className="max-w-[85%] rounded-xl bg-muted px-4 py-3">
+                          {toolStore.calls.map(call => (
+                            <ToolRenderer
+                              key={`${call.toolName}-${call.startedAt}`}
+                              state={call}
+                              className="mb-1 last:mb-0"
+                            />
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* AI 回答 */}
+                    {isAssistant && (
+                      <div className="flex justify-start">
+                        <div className="max-w-[80%] rounded-xl bg-muted px-4 py-3 text-sm leading-6 text-foreground">
+                          {msg.content ? (
+                            <Markdown
+                              content={msg.content}
+                              isTyping={streaming && isLast}
+                              blockMode
+                            />
+                          ) : streaming && !hasToolActivity ? (
+                            <span className="italic text-muted-foreground">思考中…</span>
+                          ) : null}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* 搜索结果汇总按钮（AI 回答下方） */}
+                    {hasSearchResults && (
+                      <div className="flex justify-start">
+                        <button
+                          type="button"
+                          onClick={() => setSearchPanelOpen(true)}
+                          className="flex items-center gap-1.5 rounded-lg bg-muted/50 px-3 py-1.5 text-xs text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+                        >
+                          <Search className="h-3 w-3" />
+                          <span>找到 {webSearchResults.length} 条搜索结果</span>
+                          <ChevronRight className="ml-0.5 h-3 w-3" />
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                )
+              })}
             </div>
+
+            {/* 悬浮搜索结果面板 */}
+            <SearchResultPanel
+              results={webSearchResults}
+              open={searchPanelOpen}
+              onClose={() => setSearchPanelOpen(false)}
+            />
           </div>
         ) : (
           <div className="flex flex-1 flex-col items-center justify-center px-4">
@@ -239,13 +293,6 @@ const ChatPage = forwardRef<HTMLDivElement, ChatPageProps>(
             />
           </div>
         </div>
-
-        {/* 搜索结果侧边栏 */}
-        <SearchResultPanel
-          results={webSearchResults}
-          open={searchPanelOpen}
-          onClose={() => setSearchPanelOpen(false)}
-        />
       </div>
     )
   },

@@ -14,9 +14,9 @@ export interface SearchResultPanelProps {
 }
 
 /**
- * SearchResultPanel — 联网搜索结果侧边栏。
+ * SearchResultPanel — 搜索结果悬浮卡片。
  *
- * 从右侧滑入，展示搜索结果列表（标题、摘要、来源）并支持点击跳转。
+ * 从聊天区右侧浮出，不遮挡主内容区，点击外部关闭。
  */
 const SearchResultPanel: React.FC<SearchResultPanelProps> = ({
   results,
@@ -24,7 +24,25 @@ const SearchResultPanel: React.FC<SearchResultPanelProps> = ({
   onClose,
   className,
 }) => {
-  if (!open) return null
+  const panelRef = React.useRef<HTMLDivElement>(null)
+
+  // 点击外部关闭
+  React.useEffect(() => {
+    if (!open) return
+    const handler = (e: MouseEvent) => {
+      if (panelRef.current && !panelRef.current.contains(e.target as Node)) {
+        onClose()
+      }
+    }
+    // 延迟绑定，避免触发 click 的同一事件立即关闭
+    const timer = setTimeout(() => document.addEventListener('mousedown', handler), 0)
+    return () => {
+      clearTimeout(timer)
+      document.removeEventListener('mousedown', handler)
+    }
+  }, [open, onClose])
+
+  if (!open || results.length === 0) return null
 
   /** 打开链接（新标签页） */
   const handleOpenLink = (url?: string) => {
@@ -33,72 +51,55 @@ const SearchResultPanel: React.FC<SearchResultPanelProps> = ({
   }
 
   return (
-    <>
-      {/* 遮罩层 */}
-      <div
-        className="fixed inset-0 z-40 bg-black/20"
-        onClick={onClose}
-        aria-hidden="true"
-      />
-
-      {/* 侧边栏 */}
-      <div
-        className={cn(
-          'fixed right-0 top-0 z-50 flex h-full w-80 flex-col border-l bg-background shadow-lg',
-          className,
-        )}
-      >
-        {/* 标题栏 */}
-        <div className="flex items-center justify-between border-b px-4 py-3">
-          <h3 className="text-sm font-semibold text-foreground">
-            搜索结果（{results.length}）
-          </h3>
-          <button
-            type="button"
-            onClick={onClose}
-            className="rounded-md p-1 text-muted-foreground hover:bg-muted hover:text-foreground"
-          >
-            <X className="h-4 w-4" />
-          </button>
-        </div>
-
-        {/* 结果列表 */}
-        <div className="flex-1 overflow-y-auto px-4 py-3">
-          {results.length === 0 ? (
-            <p className="text-sm text-muted-foreground">暂无搜索结果</p>
-          ) : (
-            <ul className="space-y-3">
-              {results.map((result, i) => (
-                <li key={result.url ?? i}>
-                  <button
-                    type="button"
-                    onClick={() => handleOpenLink(result.url)}
-                    className="block w-full rounded-lg border p-3 text-left transition-colors hover:bg-muted/50"
-                  >
-                    <div className="flex items-start gap-2">
-                      <div className="min-w-0 flex-1">
-                        <h4 className="truncate text-sm font-medium text-foreground">
-                          {result.name || '无标题'}
-                        </h4>
-                        {result.snippet && (
-                          <p className="mt-1 line-clamp-2 text-xs text-muted-foreground">
-                            {result.snippet}
-                          </p>
-                        )}
-                        <div className="mt-1.5 flex items-center gap-1 text-xs text-muted-foreground/70">
-                          <span className="truncate">{result.siteName || result.url}</span>
-                          <ExternalLink className="h-3 w-3 shrink-0" />
-                        </div>
-                      </div>
-                    </div>
-                  </button>
-                </li>
-              ))}
-            </ul>
-          )}
-        </div>
+    <div
+      ref={panelRef}
+      className={cn(
+        'absolute right-4 top-4 z-50 w-80 max-h-[70vh] rounded-xl border bg-background shadow-xl',
+        className,
+      )}
+    >
+      {/* 标题栏 */}
+      <div className="flex items-center justify-between border-b px-4 py-3">
+        <h3 className="text-sm font-semibold text-foreground">
+          搜索结果（{results.length}）
+        </h3>
+        <button
+          type="button"
+          onClick={onClose}
+          className="rounded-md p-1 text-muted-foreground hover:bg-muted hover:text-foreground"
+        >
+          <X className="h-4 w-4" />
+        </button>
       </div>
-    </>
+
+      {/* 结果列表 */}
+      <div className="overflow-y-auto px-4 py-3" style={{ maxHeight: 'calc(70vh - 3.5rem)' }}>
+        <ul className="space-y-2.5">
+          {results.map((result, i) => (
+            <li key={result.url ?? i}>
+              <button
+                type="button"
+                onClick={() => handleOpenLink(result.url)}
+                className="block w-full rounded-lg border p-2.5 text-left transition-colors hover:bg-muted/50"
+              >
+                <h4 className="truncate text-xs font-medium text-foreground">
+                  {result.name || '无标题'}
+                </h4>
+                {result.snippet && (
+                  <p className="mt-0.5 line-clamp-2 text-[11px] text-muted-foreground">
+                    {result.snippet}
+                  </p>
+                )}
+                <div className="mt-1 flex items-center gap-1 text-[10px] text-muted-foreground/70">
+                  <span className="truncate">{result.siteName || result.url}</span>
+                  <ExternalLink className="h-2.5 w-2.5 shrink-0" />
+                </div>
+              </button>
+            </li>
+          ))}
+        </ul>
+      </div>
+    </div>
   )
 }
 
