@@ -14,5 +14,19 @@ services:
       dockerfile: apps/server/Dockerfile
     ports:
       - '3001:3001'
+      - '8081:3001'
     environment:
       - PORT=3001
+
+  # 本地代码执行沙箱
+  sandbox:
+    build:
+      context: ./sandbox
+    ports:
+      - '3002:3002'
+    volumes:
+      - sandbox_data:/workspace
+    restart: unless-stopped
+
+volumes:
+  sandbox_data:
