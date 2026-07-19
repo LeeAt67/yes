@@ -10,6 +10,9 @@ import { conversationStore, authStore } from '@/controller/instances'
 
 const logger = createLogger('chat:page')
 
+/** localStorage 草稿 key：防止发送途中 401 导致输入内容丢失 */
+const DRAFT_KEY = 'chat-draft'
+
 const DEFAULT_MODELS = ['deepseek-v4-pro', 'deepseek-v4-flash']
 
 interface ChatPageClassNames {
@@ -29,7 +32,7 @@ export interface ChatPageProps {
  */
 const ChatPage = forwardRef<HTMLDivElement, ChatPageProps>(
   ({ className, classNames }, ref) => {
-    const [inputValue, setInputValue] = useState('')
+    const [inputValue, setInputValue] = useState(() => localStorage.getItem(DRAFT_KEY) ?? '')
     const [model, setModel] = useState('deepseek-v4-pro')
     const [models, setModels] = useState<string[]>(DEFAULT_MODELS)
     const { messages, streaming, conversationId } = conversationStore
@@ -48,6 +51,9 @@ const ChatPage = forwardRef<HTMLDivElement, ChatPageProps>(
       if (!query || streaming) return
 
       logger.info('Sending:', { query, model })
+
+      // 持久化草稿：防止发送途中 401 导致输入内容丢失
+      localStorage.setItem(DRAFT_KEY, inputValue)
       setInputValue('')
 
       // 同步 auth token
@@ -63,7 +69,7 @@ const ChatPage = forwardRef<HTMLDivElement, ChatPageProps>(
       conversationStore.addMessage({ role: 'assistant', content: '' })
       conversationStore.streaming = true
 
-      await streamChatMessage(query, (token) => {
+      const messages = await streamChatMessage(query, (token) => {
         conversationStore.appendToken(token)
       }, {
         conversationId,
@@ -74,6 +80,16 @@ const ChatPage = forwardRef<HTMLDivElement, ChatPageProps>(
       // 请求完毕后清理
       abortRef.current = null
       conversationStore.streaming = false
+
+      // 发送成功 → 清除草稿
+      if (messages.length > 0) {
+        localStorage.removeItem(DRAFT_KEY)
+      } else {
+        // 发送失败（通常是 401）：回滚已添加的消息 + 恢复输入框
+        // removeLastMessages(2) 移除 user + assistant 占位
+        conversationStore.removeLastMessages(2)
+        setInputValue(query)
+      }
     }, [inputValue, streaming, model, conversationId])
 
     /** 停止生成 — 中断当前流式请求 */

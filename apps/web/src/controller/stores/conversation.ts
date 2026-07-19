@@ -53,6 +53,11 @@ class ConversationStore {
   clearMessages = () => {
     this.messages = []
   }
+
+  /** 移除最后 n 条消息（用于 401 等发送失败回滚） */
+  removeLastMessages = (n: number) => {
+    this.messages = this.messages.slice(0, -n)
+  }
 }
 
 export default ConversationStore
