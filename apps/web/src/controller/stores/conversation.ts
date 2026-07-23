@@ -170,15 +170,13 @@ class ConversationStore {
         api.put(`/api/conversations/${this.activeId}/touch`, { title })
       }
     }
-    this._debouncedPersist()
   }
 
-  /** 追加 token */
+  /** 追加 token（仅在内存累积，不触发持久化） */
   appendToken = (token: string) => {
     const last = this.messages[this.messages.length - 1]
     if (last && last.role === 'assistant') {
       last.content += token
-      this._debouncedPersist()
     }
   }
 
@@ -191,6 +189,21 @@ class ConversationStore {
   clearMessages = () => {
     this.messages = []
     this._persist()
+  }
+
+  /**
+   * 流式结束后调用，保存完整对话到后端。
+   */
+  saveMessages = async () => {
+    if (!this.activeId || this.messages.length === 0) return
+    await api.post('/api/chat/save', {
+      conversationId: this.activeId,
+      messages: this.messages.map(m => ({
+        role: m.role,
+        content: m.content,
+        createdAt: m.createdAt,
+      })),
+    })
   }
 
   // ── 内部 ──
@@ -229,7 +242,8 @@ class ConversationStore {
       await api.delete(`/api/chat-history/${this.activeId}`)
       return
     }
-    await api.put(`/api/chat-history/${this.activeId}`, {
+    await api.post('/api/chat/save', {
+      conversationId: this.activeId,
       messages: this.messages.map(m => ({
         role: m.role,
         content: m.content,

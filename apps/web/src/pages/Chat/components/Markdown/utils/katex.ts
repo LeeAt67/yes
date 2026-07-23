@@ -86,13 +86,17 @@ export interface ThinkBlock {
 
 /**
  * 将 <think>\0...\0 分隔符拆分为思考块数组，并返回纯正文。
+ *
+ * 兼容两种格式：
+ * - 流式实时: <think>\0...\0（\0 = null 字符，标记为服务端注入）
+ * - 历史回放: <think>...</think>（\0 在 JSON/DB 存储中可能丢失）
  */
 const splitThinkBlocks = (input: string, isTyping: boolean): { clean: string; blocks: ThinkBlock[] } => {
   const THINK_OPEN = '<think>\0'
   const THINK_CLOSE = '</think>\0'
   const blocks: ThinkBlock[] = []
 
-  // 找出所有已完成闭合的 think 块
+  // ① 先尝试 \0 分隔符（流式实时）
   let result = input
   while (true) {
     const openIdx = result.indexOf(THINK_OPEN)
@@ -107,7 +111,7 @@ const splitThinkBlocks = (input: string, isTyping: boolean): { clean: string; bl
     result = result.slice(0, openIdx) + result.slice(closeIdx + THINK_CLOSE.length)
   }
 
-  // 处理流式中未闭合的 think 段
+  // 处理流式中未闭合的 \0 段
   if (isTyping) {
     const openIdx = result.lastIndexOf(THINK_OPEN)
     if (openIdx !== -1 && !result.includes(THINK_CLOSE, openIdx)) {
@@ -116,6 +120,22 @@ const splitThinkBlocks = (input: string, isTyping: boolean): { clean: string; bl
         blocks.push({ content: thinking, done: false })
       }
       result = result.slice(0, openIdx)
+    }
+  }
+
+  // ② 兜底：处理不带 \0 的 <think>...</think>（历史记录，\0 可能在存储中丢失）
+  if (blocks.length === 0) {
+    while (true) {
+      const openIdx = result.indexOf('<think>')
+      if (openIdx === -1) break
+      const closeIdx = result.indexOf('</think>', openIdx + 7)
+      if (closeIdx === -1) break
+
+      const thinking = result.slice(openIdx + 7, closeIdx).trim()
+      if (thinking) {
+        blocks.push({ content: thinking, done: true })
+      }
+      result = result.slice(0, openIdx) + result.slice(closeIdx + 8)
     }
   }
 

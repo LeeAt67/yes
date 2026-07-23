@@ -53,3 +53,26 @@
 .markdown-prose thead {
   @apply text-nowrap;
 }
+
+/* ── 思考面板（对齐      Chat） ── */
+
+@keyframes think-shimmer {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+.think-panel-shimmer {
+  -webkit-text-fill-color: transparent;
+  color: #818286;
+  background: linear-gradient(90deg, #9a9b9e 25%, #2a2929, #9a9b9e 75%) 0 0 / 200% 100%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  animation: 4s linear infinite think-shimmer;
+}
+
+.dark .think-panel-shimmer {
+  color: #9a9b9e;
+  background: linear-gradient(90deg, #6b6b6b 25%, #e0e0e0, #6b6b6b 75%) 0 0 / 200% 100%;
+  -webkit-background-clip: text;
+  background-clip: text;
+}

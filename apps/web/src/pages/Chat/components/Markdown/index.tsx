@@ -7,7 +7,7 @@ import remarkGfm from 'remark-gfm'
 import remarkHtml from 'remark-html'
 import remarkMath from 'remark-math'
 import rehypeKatex from 'rehype-katex'
-import { Brain } from 'lucide-react'
+import { Brain, Loader2 } from 'lucide-react'
 import { cn, createLogger } from '@yes/shared'
 
 import CodeBlock from './CodeBlock'
@@ -86,24 +86,39 @@ class MarkdownErrorBoundary extends Component<
 const getContentKey = (text: string) => `${text.length}:${text.slice(0, 128)}`
 
 /**
- * 思考面板组件。
- *
- * 将后端注入的 <think>\0...\0 分隔的思考内容渲染为可折叠面板。
+ * 思考面板组件
  */
 const ThinkPanel = ({ block }: { block: ThinkBlock }) => {
   return (
-    <details
-      className="my-2 rounded-lg border border-gray-200 bg-gray-50 dark:border-gray-700 dark:bg-gray-800/50"
-      open={!block.done}
-    >
-      <summary className="flex cursor-pointer items-center gap-2 px-4 py-2 text-sm text-gray-500 select-none dark:text-gray-400">
-        <Brain className="h-4 w-4 shrink-0" />
-        <span>{block.done ? '思考完成' : '思考中...'}</span>
-      </summary>
-      <div className="px-4 pb-3 text-sm text-gray-600 dark:text-gray-300 whitespace-pre-wrap">
-        {block.content}
-      </div>
-    </details>
+    <div className="mb-2">
+      {!block.done ? (
+        /* 思考中：内联展开，shimmer 动画标题 */
+        <div>
+          <div className={cn('flex items-center gap-2 text-sm select-none mb-2', 'think-panel-shimmer')}>
+            <Loader2 className="h-4 w-4 animate-spin" />
+            <span>思考中...</span>
+          </div>
+          <blockquote
+            className="border-l-2 border-gray-300 pl-4 my-1 text-sm font-normal not-italic whitespace-pre-wrap text-[#61666B] dark:text-gray-400 dark:border-gray-600"
+          >
+            {block.content}
+          </blockquote>
+        </div>
+      ) : (
+        /* 思考完成：可折叠面板 */
+        <details className="group">
+          <summary className="flex cursor-pointer items-center gap-2 text-sm text-gray-500 select-none dark:text-gray-400">
+            <Brain className="h-4 w-4 shrink-0" />
+            <span>思考完成</span>
+          </summary>
+          <blockquote
+            className="border-l-2 border-gray-300 pl-4 mt-2 mb-1 text-sm font-normal not-italic whitespace-pre-wrap text-[#61666B] dark:text-gray-400 dark:border-gray-600"
+          >
+            {block.content}
+          </blockquote>
+        </details>
+      )}
+    </div>
   )
 }
 

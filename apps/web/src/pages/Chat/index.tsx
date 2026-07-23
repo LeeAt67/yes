@@ -167,8 +167,9 @@ const ChatPage = forwardRef<HTMLDivElement, ChatPageProps>(
       abortRef.current = null
       runInAction(() => { conversationStore.streaming = false })
 
-      // 发送成功 → 清除草稿
+      // 流式结束后保存完整对话到后端
       if (resultMessages.length > 0) {
+        await conversationStore.saveMessages()
         localStorage.removeItem(DRAFT_KEY)
       } else {
         // 发送失败（通常是 401）：回滚已添加的消息 + 恢复输入框

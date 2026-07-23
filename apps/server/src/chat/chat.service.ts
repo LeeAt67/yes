@@ -468,7 +468,7 @@ export class ChatService {
 
           // 捕获文本
           // 处理 thinking/reasoning：DeepSeek 通过 reasoning_content 字段输出
-          // 注入 <think>\0 / </think>\0 分隔符（对齐 mimo-chat 协议）
+          // 注入 <think>\0 / </think>\0 分隔符（对齐     -chat 协议）
           // 用状态跟踪避免逐 token 重复包裹
           if (delta?.reasoning_content) {
             const r = delta.reasoning_content as string

@@ -1,7 +1,14 @@
-import { Controller, Post, Body, BadRequestException, Res, UseGuards } from '@nestjs/common'
-import type { Response } from 'express'
+import { Controller, Post, Body, BadRequestException, Res, Req, UseGuards } from '@nestjs/common'
+import type { Request as ExpressRequest, Response } from 'express'
 import { ChatService, chatRequestSchema, type ChatRequest } from './chat.service'
+import { ChatHistoryService, type MessageInput } from '../chat-history/chat-history.service'
+import { ConversationService } from '../chat-history/conversation.service'
 import { JwtAuthGuard } from '../auth/jwt-auth.guard'
+
+interface AuthenticatedUser {
+  userId: number
+  username: string
+}
 
 /**
  * ChatController — 聊天 API。
@@ -11,7 +18,11 @@ import { JwtAuthGuard } from '../auth/jwt-auth.guard'
 @UseGuards(JwtAuthGuard)
 @Controller('/api/chat')
 export class ChatController {
-  constructor(private readonly chatService: ChatService) {}
+  constructor(
+    private readonly chatService: ChatService,
+    private readonly chatHistoryService: ChatHistoryService,
+    private readonly conversationService: ConversationService,
+  ) {}
 
   /**
    * POST /api/chat
@@ -85,5 +96,32 @@ export class ChatController {
     }
 
     res.end()
+  }
+
+  /**
+   * POST /api/chat/save
+   *
+   * 保存整段对话内容（流式结束后由前端调用）。
+   * Body: { conversationId, messages: [{ role, content, createdAt }] }
+   */
+  @Post('/save')
+  async saveMessages(
+    @Body() body: { conversationId: string; messages: MessageInput[] },
+    @Req() req: ExpressRequest & { user: AuthenticatedUser },
+  ) {
+    const { conversationId, messages } = body
+    if (!conversationId || !Array.isArray(messages)) {
+      throw new BadRequestException('Invalid body: need conversationId and messages array')
+    }
+
+    await this.chatHistoryService.replaceConversation(
+      req.user.userId,
+      conversationId,
+      messages,
+    )
+    // 顺便 touch 会话更新时间
+    await this.conversationService.touch(req.user.userId, conversationId)
+
+    return { ok: true }
   }
 }

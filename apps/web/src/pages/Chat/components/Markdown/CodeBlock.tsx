@@ -1,4 +1,5 @@
 import { Component, Suspense, lazy, useState, useCallback, Fragment, useMemo } from 'react'
+import DOMPurify from 'dompurify'
 import { createLogger } from '@yes/shared'
 
 import useInViewOnce from './hooks/useInViewOnce'
@@ -86,6 +87,7 @@ const PlainLines = ({
  */
 const CodeBlock = ({ code, language, isTyping = false }: CodeBlockProps) => {
   const [copyLabel, setCopyLabel] = useState('复制')
+  const isHtml = language === 'html'
 
   const handleCopy = useCallback(async () => {
     try {
@@ -98,6 +100,7 @@ const CodeBlock = ({ code, language, isTyping = false }: CodeBlockProps) => {
   }, [code])
 
   const [inViewRef, inView] = useInViewOnce<HTMLDivElement>()
+  const [htmlView, setHtmlView] = useState<'code' | 'preview'>('code')
 
   const preClassName = 'overflow-x-auto rounded-b-lg text-xs [&_pre]:rounded-b-lg [&_pre]:text-xs'
 
@@ -137,7 +140,25 @@ const CodeBlock = ({ code, language, isTyping = false }: CodeBlockProps) => {
       {/* Sticky header */}
       <div className="sticky top-0 z-[10] bg-background">
         <div className="flex items-center justify-between rounded-t-lg border border-b-0 border-border bg-muted px-3 py-1.5 text-xs text-muted-foreground">
-          <span>{language}</span>
+          <div className="flex items-center gap-2">
+            <span>{language}</span>
+            {isHtml && (
+              <div className="flex rounded border border-border text-[11px]">
+                <button
+                  onClick={() => setHtmlView('code')}
+                  className={`px-2 py-0.5 ${htmlView === 'code' ? 'bg-background text-foreground' : 'text-muted-foreground hover:text-foreground'}`}
+                >
+                  代码
+                </button>
+                <button
+                  onClick={() => setHtmlView('preview')}
+                  className={`px-2 py-0.5 ${htmlView === 'preview' ? 'bg-background text-foreground' : 'text-muted-foreground hover:text-foreground'}`}
+                >
+                  预览
+                </button>
+              </div>
+            )}
+          </div>
           <button
             onClick={handleCopy}
             className="opacity-0 transition-opacity group-hover:opacity-100 hover:text-foreground"
@@ -147,8 +168,19 @@ const CodeBlock = ({ code, language, isTyping = false }: CodeBlockProps) => {
         </div>
       </div>
 
-      {/* 代码主体：grid 叠层，底层占位撑高，上层高亮覆盖。
-          overflow: hidden 裁切底层 PlainLines 超出部分，防止与上层 Shiki 重叠透出 */}  
+      {/* 代码主体 */}
+      {isHtml && htmlView === 'preview' ? (
+        <div
+          className="max-w-full overflow-hidden rounded-b-lg border border-t-0 border-border p-2"
+          // eslint-disable-next-line react/no-danger -- DOMPurify 净化后的 HTML 内容
+          dangerouslySetInnerHTML={{
+            __html: DOMPurify.sanitize(code, {
+              FORBID_ATTR: ['style'],
+              ADD_ATTR: ['target'],
+            }),
+          }}
+        />
+      ) : (
       <div className="relative overflow-hidden rounded-b-lg border border-t-0 border-border">
         {/* 底层占位（仅在高亮未挂载时可见） */}
         {!inView && <div aria-hidden>{fallbackPre}</div>}
@@ -171,6 +203,7 @@ const CodeBlock = ({ code, language, isTyping = false }: CodeBlockProps) => {
           )}
         </div>
       </div>
+      )}
     </div>
   )
 }
