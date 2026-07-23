@@ -78,23 +78,78 @@ const trimUnclosedDelimiters = (text: string): string => {
   return result
 }
 
-/**
- * 预处理 Markdown 内容：定界符统一 + 特殊标签转义。
- *
- * @param input - 原始内容
- * @param isTyping - 是否正在流式输出；为 true 时会裁剪末尾未闭合的定界符
- * @returns 可直接传入 react-markdown 的内容
- */
-export const preprocessContent = (input: string, isTyping = false): string => {
-  if (!input) return ''
+/** 思考块数据 */
+export interface ThinkBlock {
+  content: string
+  done: boolean
+}
 
-  // 转义 <think> 标签（防止被 rehypeRaw 当作 HTML 吃掉）
-  const escaped = input
+/**
+ * 将 <think>\0...\0 分隔符拆分为思考块数组，并返回纯正文。
+ */
+const splitThinkBlocks = (input: string, isTyping: boolean): { clean: string; blocks: ThinkBlock[] } => {
+  const THINK_OPEN = '<think>\0'
+  const THINK_CLOSE = '</think>\0'
+  const blocks: ThinkBlock[] = []
+
+  // 找出所有已完成闭合的 think 块
+  let result = input
+  while (true) {
+    const openIdx = result.indexOf(THINK_OPEN)
+    if (openIdx === -1) break
+    const closeIdx = result.indexOf(THINK_CLOSE, openIdx + THINK_OPEN.length)
+    if (closeIdx === -1) break
+
+    const thinking = result.slice(openIdx + THINK_OPEN.length, closeIdx).trim()
+    if (thinking) {
+      blocks.push({ content: thinking, done: true })
+    }
+    result = result.slice(0, openIdx) + result.slice(closeIdx + THINK_CLOSE.length)
+  }
+
+  // 处理流式中未闭合的 think 段
+  if (isTyping) {
+    const openIdx = result.lastIndexOf(THINK_OPEN)
+    if (openIdx !== -1 && !result.includes(THINK_CLOSE, openIdx)) {
+      const thinking = result.slice(openIdx + THINK_OPEN.length).trim()
+      if (thinking) {
+        blocks.push({ content: thinking, done: false })
+      }
+      result = result.slice(0, openIdx)
+    }
+  }
+
+  // 转义残留的 <think> / </think>（用户可能输入的字面量）
+  const clean = result
     .replace(/<think>/g, '&lt;think&gt;')
     .replace(/<\/think>/g, '&lt;/think&gt;')
 
-  const replaced = replaceDelimiters(escaped)
+  return { clean, blocks }
+}
 
-  // 流式时裁剪末尾未闭合的定界符，防止后续正文被误吞为公式
-  return isTyping ? trimUnclosedDelimiters(replaced) : replaced
+/** 预处理结果 */
+export interface PreprocessResult {
+  /** 纯正文（可安全传 ReactMarkdown） */
+  content: string
+  /** 思考块列表（在渲染层单独展示） */
+  thinkBlocks: ThinkBlock[]
+}
+
+/**
+ * 预处理 Markdown 内容：拆分思考块 + 定界符统一 + 标签转义。
+ *
+ * @param input - 原始内容（含 <think>\0 思考分隔符，由后端注入）
+ * @param isTyping - 是否正在流式输出；为 true 时处理未闭合思考段并裁剪定界符
+ * @returns 可直接传入 react-markdown 的内容 + 思考块数组
+ */
+export const preprocessContent = (input: string, isTyping = false): PreprocessResult => {
+  if (!input) return { content: '', thinkBlocks: [] }
+
+  const { clean, blocks } = splitThinkBlocks(input, isTyping)
+  const replaced = replaceDelimiters(clean)
+
+  return {
+    content: isTyping ? trimUnclosedDelimiters(replaced) : replaced,
+    thinkBlocks: blocks,
+  }
 }

@@ -135,6 +135,7 @@ interface LLMChunk {
   choices?: Array<{
     delta?: {
       content?: string
+      reasoning_content?: string
       tool_calls?: Array<{
         index?: number
         id?: string
@@ -407,6 +408,9 @@ export class ChatService {
       let finishReason = ''
       let hasContent = false
 
+      // thinking/reasoning 状态：追踪思考开始/结束，只注入一次分隔符
+      let inReasoning = false
+
       // 文本缓冲
       let buffer = ''
       let lastFlushTime = Date.now()
@@ -419,6 +423,16 @@ export class ChatService {
           yield { type: 'text', content: buffer }
           buffer = ''
           lastFlushTime = Date.now()
+        }
+      }
+
+      /** 关闭思考段（如果有未闭合的），在正文开始前或流结束时调用 */
+      const closeReasoning = function* (): Generator<Record<string, unknown>> {
+        if (inReasoning) {
+          // yield 当前缓冲（思考内容），再追加闭合标签
+          buffer += '</think>\0'
+          yield* tryFlush()
+          inReasoning = false
         }
       }
 
@@ -453,8 +467,24 @@ export class ChatService {
           }
 
           // 捕获文本
+          // 处理 thinking/reasoning：DeepSeek 通过 reasoning_content 字段输出
+          // 注入 <think>\0 / </think>\0 分隔符（对齐 mimo-chat 协议）
+          // 用状态跟踪避免逐 token 重复包裹
+          if (delta?.reasoning_content) {
+            const r = delta.reasoning_content as string
+            if (!inReasoning) {
+              // 首次进入思考 → 打开标签
+              buffer += '<think>\0'
+              inReasoning = true
+            }
+            buffer += r
+            if (shouldFlush()) yield* tryFlush()
+          }
+
           const token = delta?.content
           if (token) {
+            // 正文 token 到达 → 先关闭思考段（如果还在思考中）
+            if (inReasoning) yield* closeReasoning()
             hasContent = true
             buffer += token
             if (shouldFlush()) yield* tryFlush()
@@ -493,6 +523,8 @@ export class ChatService {
           for (const evt of processLine(lineBuffer.trimEnd())) yield evt
         }
 
+        // 关闭思考段（若仍未闭合）+ flush 剩余缓冲
+        yield* closeReasoning()
         yield* tryFlush()
       } catch { /* stream interrupted */ }
 

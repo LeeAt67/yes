@@ -66,7 +66,7 @@ export class ChatController {
           writeEvent('tool_result', { name: evt.name, result: evt.result })
           break
         case 'text':
-          writeEvent('message', { type: 'text', content: evt.content as string })
+          writeEvent('message', { content: evt.content as string })
           break
         case 'error':
           writeEvent('error', { content: evt.content as string })
@@ -79,7 +79,7 @@ export class ChatController {
           })
           break
         case 'done':
-          writeEvent('finish', { content: '[DONE]' })
+          writeEvent('finish', {})
           break
       }
     }

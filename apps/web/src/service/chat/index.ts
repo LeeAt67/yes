@@ -228,10 +228,10 @@ export const streamChatMessage = async (
         if (eventType === 'message') {
           try {
             const parsed = JSON.parse(value.data) as SSEPayload
-            if (parsed.type === 'text' && parsed.content) {
-              fullContent += parsed.content
-              // 累积 token，交由 RAF 聚合后产出，每帧最多触发一次重渲染
-              cachedContent += parsed.content
+            const rawContent = parsed.content ?? ''
+            if (rawContent) {
+              fullContent += rawContent
+              cachedContent += rawContent
               scheduleRafFlush()
             }
           } catch { /* skip */ }

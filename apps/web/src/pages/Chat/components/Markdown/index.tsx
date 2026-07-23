@@ -7,10 +7,11 @@ import remarkGfm from 'remark-gfm'
 import remarkHtml from 'remark-html'
 import remarkMath from 'remark-math'
 import rehypeKatex from 'rehype-katex'
+import { Brain } from 'lucide-react'
 import { cn, createLogger } from '@yes/shared'
 
 import CodeBlock from './CodeBlock'
-import { preprocessContent } from './utils/katex'
+import { preprocessContent, type ThinkBlock } from './utils/katex'
 import rehypeRaw from './utils/rehypeRaw'
 import { splitMarkdownIntoBlocks } from './utils/splitBlocks'
 
@@ -85,6 +86,39 @@ class MarkdownErrorBoundary extends Component<
 const getContentKey = (text: string) => `${text.length}:${text.slice(0, 128)}`
 
 /**
+ * 思考面板组件。
+ *
+ * 将后端注入的 <think>\0...\0 分隔的思考内容渲染为可折叠面板。
+ */
+const ThinkPanel = ({ block }: { block: ThinkBlock }) => {
+  return (
+    <details
+      className="my-2 rounded-lg border border-gray-200 bg-gray-50 dark:border-gray-700 dark:bg-gray-800/50"
+      open={!block.done}
+    >
+      <summary className="flex cursor-pointer items-center gap-2 px-4 py-2 text-sm text-gray-500 select-none dark:text-gray-400">
+        <Brain className="h-4 w-4 shrink-0" />
+        <span>{block.done ? '思考完成' : '思考中...'}</span>
+      </summary>
+      <div className="px-4 pb-3 text-sm text-gray-600 dark:text-gray-300 whitespace-pre-wrap">
+        {block.content}
+      </div>
+    </details>
+  )
+}
+
+const ThinkPanelList = ({ blocks }: { blocks: ThinkBlock[] }) => {
+  if (blocks.length === 0) return null
+  return (
+    <div className="mb-3">
+      {blocks.map((block, i) => (
+        <ThinkPanel key={i} block={block} />
+      ))}
+    </div>
+  )
+}
+
+/**
  * Markdown 渲染组件。
  *
  * 支持：
@@ -97,21 +131,22 @@ const getContentKey = (text: string) => `${text.length}:${text.slice(0, 128)}`
  */
 const Markdown = memo(
   ({ className, content, isTyping = false, blockMode = false }: MarkdownProps) => {
-    const processedContent = preprocessContent(content, isTyping)
+    const { content: cleanContent, thinkBlocks } = preprocessContent(content, isTyping)
 
     // 分块模式：按安全空行切分
     const blocks = useMemo(
-      () => (blockMode ? splitMarkdownIntoBlocks(processedContent) : [processedContent]),
-      [blockMode, processedContent],
+      () => (blockMode ? splitMarkdownIntoBlocks(cleanContent) : [cleanContent]),
+      [blockMode, cleanContent],
     )
 
-    const contentKey = getContentKey(processedContent)
+    const contentKey = getContentKey(cleanContent)
 
     if (blockMode) {
       // 分块模式：已完成 block memo 冻结，仅尾块随流式更新
       return (
         <MarkdownErrorBoundary resetKey={contentKey} isTyping={isTyping}>
           <div className={cn('markdown-prose select-text', className)}>
+            <ThinkPanelList blocks={thinkBlocks} />
             {blocks.slice(0, -1).map((block, i) => (
               <MarkdownCoreMemo
                 key={`block-${i}-frozen`}
@@ -135,7 +170,8 @@ const Markdown = memo(
     return (
       <MarkdownErrorBoundary resetKey={contentKey} isTyping={isTyping}>
         <div className={cn('markdown-prose select-text', className)}>
-          <MarkdownCoreMemo content={processedContent} isTyping={isTyping} />
+          <ThinkPanelList blocks={thinkBlocks} />
+          <MarkdownCoreMemo content={cleanContent} isTyping={isTyping} />
         </div>
       </MarkdownErrorBoundary>
     )
